@@ -2,26 +2,26 @@
 svg { max-width: 100%; max-height: 100%; }
 
 :root {
-  --app-bg: #010101;
-  --app-bg-soft: #050506;
-  --panel-bg: rgba(10, 10, 11, 0.58);
-  --panel-bg-strong: rgba(14, 14, 16, 0.78);
-  --panel-border: rgba(255, 255, 255, 0.045);
-  --panel-border-hover: rgba(255, 255, 255, 0.115);
-  --text-primary: #f2f2f2;
-  --text-secondary: #a8aaaf;
-  --text-muted: #757575;
-  --button-bg: linear-gradient(135deg, #060607 0%, #24262b 100%);
-  --button-border: rgba(255, 255, 255, 0.16);
-  --shadow-soft: 0 16px 50px rgba(0, 0, 0, 0.82);
-  --accent-primary: #d4d4d4;
-  --accent-rgb: 212, 212, 212;
-  --accent-glow: rgba(255, 255, 255, 0.10);
-  --accent-border: rgba(255, 255, 255, 0.32);
-  --accent-gradient: linear-gradient(135deg, #d8d8d8 0%, #ffffff 48%, #8d8d8d 100%);
-  --premium-gold: #f6c84c;
-  --premium-gold-soft: rgba(246, 200, 76, 0.24);
-  --premium-gold-glow: rgba(246, 200, 76, 0.36);
+  --app-bg: #030302;
+  --app-bg-soft: #080704;
+  --panel-bg: rgba(13, 12, 9, 0.72);
+  --panel-bg-strong: rgba(20, 18, 12, 0.88);
+  --panel-border: rgba(255, 214, 51, 0.12);
+  --panel-border-hover: rgba(255, 214, 51, 0.30);
+  --text-primary: #f7f5ef;
+  --text-secondary: #aaa79f;
+  --text-muted: #716f68;
+  --button-bg: linear-gradient(180deg, #ffeb7a 0%, #ffd633 52%, #d9a900 100%);
+  --button-border: rgba(255, 214, 51, 0.72);
+  --shadow-soft: 0 18px 54px rgba(0, 0, 0, 0.84);
+  --accent-primary: #ffd633;
+  --accent-rgb: 255, 214, 51;
+  --accent-glow: rgba(255, 214, 51, 0.16);
+  --accent-border: rgba(255, 214, 51, 0.40);
+  --accent-gradient: linear-gradient(135deg, #d9a900 0%, #ffd633 42%, #fff0a3 70%, #e3b718 100%);
+  --premium-gold: #ffd633;
+  --premium-gold-soft: rgba(255, 214, 51, 0.18);
+  --premium-gold-glow: rgba(255, 214, 51, 0.28);
 
   --bg-0: var(--app-bg);
   --bg-1: var(--app-bg-soft);
@@ -108,17 +108,27 @@ svg { max-width: 100%; max-height: 100%; }
 }
 
 :root[data-theme="xins-premium"] {
-  --app-bg: #010101;
-  --app-bg-soft: #050506;
-  --panel-bg: rgba(10, 10, 11, 0.58);
-  --panel-bg-strong: rgba(14, 14, 16, 0.78);
-  --panel-border: rgba(255, 255, 255, 0.045);
-  --panel-border-hover: rgba(255, 255, 255, 0.115);
-  --text-primary: #f2f2f2;
-  --text-secondary: #a8aaaf;
-  --button-bg: linear-gradient(135deg, #060607 0%, #24262b 100%);
-  --button-border: rgba(255, 255, 255, 0.16);
-  --shadow-soft: 0 16px 50px rgba(0, 0, 0, 0.82);
+  --app-bg: #030302;
+  --app-bg-soft: #080704;
+  --panel-bg: rgba(13, 12, 9, 0.72);
+  --panel-bg-strong: rgba(20, 18, 12, 0.88);
+  --panel-border: rgba(255, 214, 51, 0.12);
+  --panel-border-hover: rgba(255, 214, 51, 0.30);
+  --text-primary: #f7f5ef;
+  --text-secondary: #aaa79f;
+  --text-muted: #716f68;
+  --button-bg: linear-gradient(180deg, #ffeb7a 0%, #ffd633 52%, #d9a900 100%);
+  --button-border: rgba(255, 214, 51, 0.72);
+  --shadow-soft: 0 18px 54px rgba(0, 0, 0, 0.84);
+  --accent-primary: #ffd633;
+  --accent-rgb: 255, 214, 51;
+  --accent-glow: rgba(255, 214, 51, 0.16);
+  --accent-border: rgba(255, 214, 51, 0.40);
+  --accent-gradient: linear-gradient(135deg, #d9a900 0%, #ffd633 42%, #fff0a3 70%, #e3b718 100%);
+  --hero-bg: #080704;
+  --topbar-bg: linear-gradient(180deg, rgba(12, 10, 6, 0.94), rgba(3, 3, 2, 0.90));
+  --topbar-border: rgba(255, 214, 51, 0.10);
+  --topbar-control-bg: rgba(255, 214, 51, 0.045);
 }
 
 /* Obsidian — deep black graphite, silver edge highlights, stealth/blacked-out */
@@ -18688,4 +18698,728 @@ body.settings-nav-hidden .sidebar {
   .app-loading-inner   { animation: none; }
   .app-loading-mark    { animation: none; }
   /* Spinner is kept spinning — it's a functional loading indicator, not decorative motion */
+}
+
+/* ==========================================================================
+   XTWEAKS GOLD — CURRENT PREMIUM FAMILY DESIGN
+   The existing `xins-premium` storage key is retained for compatibility; its
+   visual identity is now XTweaks Gold. All selectors are theme-scoped so the
+   optional appearance choices continue to work exactly as before.
+   ========================================================================== */
+
+html[data-theme="xins-premium"] body {
+  color: #f7f5ef;
+  background:
+    radial-gradient(900px 580px at 76% -8%, rgba(255, 214, 51, 0.075), transparent 58%),
+    radial-gradient(660px 520px at 4% 92%, rgba(217, 169, 0, 0.035), transparent 62%),
+    #030302;
+}
+
+html[data-theme="xins-premium"] .app-container {
+  background: transparent;
+}
+
+html[data-theme="xins-premium"] .titlebar {
+  background: linear-gradient(180deg, rgba(10, 9, 5, 0.97), rgba(4, 4, 2, 0.94));
+  border-bottom-color: rgba(255, 214, 51, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 163, 0.025);
+}
+
+.titlebar-logo-img {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  object-fit: cover;
+  vertical-align: middle;
+}
+
+html[data-theme="xins-premium"] .titlebar-logo-img {
+  filter: drop-shadow(0 0 8px rgba(255, 214, 51, 0.22));
+}
+
+html[data-theme="xins-premium"] .app-title {
+  color: #d8d4ca;
+}
+
+html[data-theme="xins-premium"] .titlebar-btn:hover {
+  background: rgba(255, 214, 51, 0.075);
+}
+
+html[data-theme="xins-premium"] .sidebar {
+  width: 240px;
+  padding: 18px 14px 16px;
+  background:
+    radial-gradient(300px 220px at 20% 2%, rgba(255, 214, 51, 0.055), transparent 72%),
+    linear-gradient(180deg, rgba(12, 10, 6, 0.97), rgba(3, 3, 2, 0.98));
+  border-right: 1px solid rgba(255, 214, 51, 0.11);
+  backdrop-filter: blur(28px) saturate(165%);
+  -webkit-backdrop-filter: blur(28px) saturate(165%);
+  box-shadow: 16px 0 42px rgba(0, 0, 0, 0.34), inset -1px 0 0 rgba(255, 240, 163, 0.018);
+}
+
+html[data-theme="xins-premium"] .sidebar::-webkit-scrollbar-thumb,
+html[data-theme="xins-premium"] .content::-webkit-scrollbar-thumb,
+html[data-theme="xins-premium"] .page.active::-webkit-scrollbar-thumb {
+  background: rgba(255, 214, 51, 0.13);
+}
+
+html[data-theme="xins-premium"] .nav-branding {
+  padding: 11px 12px;
+  background:
+    linear-gradient(135deg, rgba(255, 214, 51, 0.09), rgba(255, 214, 51, 0.015) 48%, transparent),
+    rgba(15, 13, 8, 0.76);
+  border-color: rgba(255, 214, 51, 0.15);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 240, 163, 0.09),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.48);
+}
+
+html[data-theme="xins-premium"] .branding-avatar-ring,
+html[data-theme="xins-premium"] .branding-pfp-wrap {
+  border-color: rgba(255, 214, 51, 0.34);
+  box-shadow: 0 0 0 3px rgba(255, 214, 51, 0.055), 0 0 18px rgba(255, 214, 51, 0.10);
+}
+
+html[data-theme="xins-premium"] .branding-profile-title,
+html[data-theme="xins-premium"] .branding-name {
+  color: #f7f5ef;
+}
+
+html[data-theme="xins-premium"] .branding-profile-handle,
+html[data-theme="xins-premium"] .branding-version {
+  color: #ffd633;
+}
+
+html[data-theme="xins-premium"] .branding-profile-divider {
+  background: linear-gradient(90deg, rgba(255, 214, 51, 0.28), transparent);
+}
+
+html[data-theme="xins-premium"] .nav-category {
+  color: #716f68;
+  font-size: 10px;
+  letter-spacing: 1.7px;
+}
+
+html[data-theme="xins-premium"] .nav-item {
+  padding: 11px 14px;
+  border-radius: 10px;
+  color: #aaa79f;
+  transition: color 220ms ease, background 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+}
+
+html[data-theme="xins-premium"] .nav-item:hover {
+  color: #f7f5ef;
+  background: rgba(255, 255, 255, 0.045);
+  transform: translateX(1px);
+}
+
+html[data-theme="xins-premium"] .nav-item.active {
+  color: #fff8d8;
+  background: linear-gradient(90deg, rgba(255, 214, 51, 0.18), rgba(255, 214, 51, 0.035) 62%, transparent);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 214, 51, 0.28),
+    0 8px 24px rgba(255, 214, 51, 0.07);
+}
+
+html[data-theme="xins-premium"] .nav-item.active::before {
+  left: -14px;
+  width: 3px;
+  height: 62%;
+  background: linear-gradient(180deg, #fff0a3, #ffd633 58%, #d9a900);
+  box-shadow: 0 0 13px rgba(255, 214, 51, 0.34);
+}
+
+html[data-theme="xins-premium"] .nav-item.active svg {
+  color: #ffd633;
+  filter: drop-shadow(0 0 6px rgba(255, 214, 51, 0.20));
+}
+
+html[data-theme="xins-premium"] .nav-upgrade,
+html[data-theme="xins-premium"] .nav-subscription {
+  background: linear-gradient(145deg, rgba(255, 214, 51, 0.10), rgba(255, 214, 51, 0.018));
+  border-color: rgba(255, 214, 51, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 163, 0.08);
+}
+
+html[data-theme="xins-premium"] .nav-upgrade-crown-icon,
+html[data-theme="xins-premium"] .nav-upgrade-label {
+  color: #ffd633;
+}
+
+html[data-theme="xins-premium"] .content {
+  background:
+    radial-gradient(920px 620px at 70% 0%, rgba(255, 214, 51, 0.065), transparent 56%),
+    radial-gradient(560px 460px at 5% 88%, rgba(217, 169, 0, 0.025), transparent 68%),
+    linear-gradient(145deg, #030302 0%, #080704 48%, #030302 100%);
+}
+
+html[data-theme="xins-premium"] .top-bar {
+  padding: 18px 28px;
+  background: linear-gradient(180deg, rgba(12, 10, 6, 0.94), rgba(3, 3, 2, 0.88));
+  border-bottom-color: rgba(255, 214, 51, 0.10);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 163, 0.035), 0 10px 34px rgba(0, 0, 0, 0.54);
+}
+
+html[data-theme="xins-premium"] .top-bar-search,
+html[data-theme="xins-premium"] .settings-search,
+html[data-theme="xins-premium"] .game-tune-search,
+html[data-theme="xins-premium"] .settings-select {
+  background: linear-gradient(180deg, rgba(18, 16, 10, 0.78), rgba(8, 7, 4, 0.88));
+  border-color: rgba(255, 214, 51, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 163, 0.035), 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+html[data-theme="xins-premium"] .top-bar-search:focus-within,
+html[data-theme="xins-premium"] .settings-search:focus-within,
+html[data-theme="xins-premium"] .game-tune-search:focus-within,
+html[data-theme="xins-premium"] .settings-select:focus {
+  background: rgba(20, 18, 12, 0.90);
+  border-color: rgba(255, 214, 51, 0.40);
+  box-shadow: 0 0 0 3px rgba(255, 214, 51, 0.07), inset 0 1px 0 rgba(255, 240, 163, 0.05);
+}
+
+html[data-theme="xins-premium"] .top-bar-search svg,
+html[data-theme="xins-premium"] .settings-search svg,
+html[data-theme="xins-premium"] .game-tune-search svg {
+  color: #9b8430;
+}
+
+html[data-theme="xins-premium"] .search-kbd {
+  color: #aaa79f;
+  background: rgba(255, 214, 51, 0.055);
+  border-color: rgba(255, 214, 51, 0.14);
+}
+
+html[data-theme="xins-premium"] .icon-btn,
+html[data-theme="xins-premium"] .settings-reset-btn,
+html[data-theme="xins-premium"] .hero-cta-ghost,
+html[data-theme="xins-premium"] .pcard-btn-secondary,
+html[data-theme="xins-premium"] .input-reset-btn,
+html[data-theme="xins-premium"] .xt-tweak-modal-btn-secondary {
+  color: #d2cfc7;
+  background: linear-gradient(180deg, rgba(24, 21, 13, 0.78), rgba(10, 9, 5, 0.88));
+  border-color: rgba(255, 214, 51, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 163, 0.055), 0 8px 24px rgba(0, 0, 0, 0.24);
+  transition: transform 220ms ease, border-color 220ms ease, color 220ms ease, background 220ms ease, box-shadow 220ms ease;
+}
+
+html[data-theme="xins-premium"] .icon-btn:hover,
+html[data-theme="xins-premium"] .settings-reset-btn:hover,
+html[data-theme="xins-premium"] .hero-cta-ghost:hover,
+html[data-theme="xins-premium"] .pcard-btn-secondary:hover,
+html[data-theme="xins-premium"] .input-reset-btn:hover,
+html[data-theme="xins-premium"] .xt-tweak-modal-btn-secondary:hover {
+  color: #f7f5ef;
+  background: rgba(255, 214, 51, 0.075);
+  border-color: rgba(255, 214, 51, 0.30);
+  transform: translateY(-1px);
+}
+
+html[data-theme="xins-premium"] .top-bar-cta,
+html[data-theme="xins-premium"] #upgrade-premium-btn.top-bar-cta,
+html[data-theme="xins-premium"] .hero-cta,
+html[data-theme="xins-premium"] .pcard-btn-primary,
+html[data-theme="xins-premium"] .input-primary-btn,
+html[data-theme="xins-premium"] .xt-tweak-run-btn,
+html[data-theme="xins-premium"] .xt-tweak-modal-btn-primary,
+html[data-theme="xins-premium"] .cu-scan-btn,
+html[data-theme="xins-premium"] .cleanup-btn.primary,
+html[data-theme="xins-premium"] .discord-join-btn {
+  color: #171106;
+  background: linear-gradient(180deg, #ffeb7a 0%, #ffd633 52%, #d9a900 100%);
+  border: 1px solid rgba(255, 214, 51, 0.72);
+  box-shadow: 0 8px 24px rgba(255, 214, 51, 0.17), inset 0 1px 0 rgba(255, 240, 163, 0.74), inset 0 -1px 0 rgba(108, 79, 0, 0.24);
+  transition: transform 220ms ease, filter 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+html[data-theme="xins-premium"] .top-bar-cta:hover,
+html[data-theme="xins-premium"] #upgrade-premium-btn.top-bar-cta:hover,
+html[data-theme="xins-premium"] .hero-cta:hover,
+html[data-theme="xins-premium"] .pcard-btn-primary:hover,
+html[data-theme="xins-premium"] .input-primary-btn:hover,
+html[data-theme="xins-premium"] .xt-tweak-run-btn:hover,
+html[data-theme="xins-premium"] .xt-tweak-modal-btn-primary:hover,
+html[data-theme="xins-premium"] .cu-scan-btn:hover,
+html[data-theme="xins-premium"] .cleanup-btn.primary:hover,
+html[data-theme="xins-premium"] .discord-join-btn:hover {
+  color: #171106;
+  background: linear-gradient(180deg, #fff09a 0%, #ffe45c 50%, #e3b718 100%);
+  border-color: rgba(255, 228, 92, 0.88);
+  box-shadow: 0 12px 32px rgba(255, 214, 51, 0.25), inset 0 1px 0 rgba(255, 244, 188, 0.90), inset 0 -1px 0 rgba(108, 79, 0, 0.20);
+  transform: translateY(-1px);
+  filter: saturate(1.04);
+}
+
+html[data-theme="xins-premium"] .top-bar-cta:active,
+html[data-theme="xins-premium"] #upgrade-premium-btn.top-bar-cta:active,
+html[data-theme="xins-premium"] .hero-cta:active,
+html[data-theme="xins-premium"] .pcard-btn-primary:active,
+html[data-theme="xins-premium"] .input-primary-btn:active,
+html[data-theme="xins-premium"] .xt-tweak-run-btn:active,
+html[data-theme="xins-premium"] .xt-tweak-modal-btn-primary:active,
+html[data-theme="xins-premium"] .discord-join-btn:active {
+  transform: scale(0.97) !important;
+}
+
+html[data-theme="xins-premium"] .page-body {
+  padding: 24px 28px 40px;
+}
+
+html[data-theme="xins-premium"] .glass,
+html[data-theme="xins-premium"] .gaming-preset-card,
+html[data-theme="xins-premium"] .toggle-card,
+html[data-theme="xins-premium"] .slider-card,
+html[data-theme="xins-premium"] .tweak-card,
+html[data-theme="xins-premium"] .sys-pcard,
+html[data-theme="xins-premium"] .net-pcard,
+html[data-theme="xins-premium"] .input-advanced-card,
+html[data-theme="xins-premium"] .settings-card,
+html[data-theme="xins-premium"] .settings-control-card,
+html[data-theme="xins-premium"] .settings-studio-card,
+html[data-theme="xins-premium"] .settings-hub-card,
+html[data-theme="xins-premium"] .settings-experience-card,
+html[data-theme="xins-premium"] .xt-cleanup-hero,
+html[data-theme="xins-premium"] .xt-cleanup-grid-shell,
+html[data-theme="xins-premium"] .xt-cleanup-side-card,
+html[data-theme="xins-premium"] .xt-cleanup-card-shell,
+html[data-theme="xins-premium"] .xt-startup-hero,
+html[data-theme="xins-premium"] .xt-startup-grid-shell,
+html[data-theme="xins-premium"] .xt-startup-card,
+html[data-theme="xins-premium"] .xt-restore-status-card,
+html[data-theme="xins-premium"] .xt-restore-action-card,
+html[data-theme="xins-premium"] .xt-tool-hub-card,
+html[data-theme="xins-premium"] .cleanup-card,
+html[data-theme="xins-premium"] .cu-hero {
+  background:
+    linear-gradient(145deg, rgba(255, 240, 163, 0.025), transparent 28%),
+    linear-gradient(160deg, rgba(20, 18, 12, 0.88), rgba(9, 8, 5, 0.78));
+  border-color: rgba(255, 214, 51, 0.12);
+  border-radius: 18px;
+  backdrop-filter: blur(28px) saturate(165%);
+  -webkit-backdrop-filter: blur(28px) saturate(165%);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.84), inset 0 1px 0 rgba(255, 240, 163, 0.075), inset 0 -1px 0 rgba(0, 0, 0, 0.55);
+}
+
+html[data-theme="xins-premium"] .asset-card,
+html[data-theme="xins-premium"] .gaming-preset-card,
+html[data-theme="xins-premium"] .toggle-card,
+html[data-theme="xins-premium"] .slider-card,
+html[data-theme="xins-premium"] .tweak-card,
+html[data-theme="xins-premium"] .sys-pcard,
+html[data-theme="xins-premium"] .net-pcard,
+html[data-theme="xins-premium"] .input-tool-card,
+html[data-theme="xins-premium"] .xt-cleanup-card-shell,
+html[data-theme="xins-premium"] .xt-startup-card,
+html[data-theme="xins-premium"] .settings-control-card,
+html[data-theme="xins-premium"] .settings-theme-card,
+html[data-theme="xins-premium"] .settings-nav-card {
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms ease, box-shadow 240ms ease, background 240ms ease;
+}
+
+html[data-theme="xins-premium"] .asset-card:hover,
+html[data-theme="xins-premium"] .gaming-preset-card:hover,
+html[data-theme="xins-premium"] .toggle-card:hover,
+html[data-theme="xins-premium"] .slider-card:hover,
+html[data-theme="xins-premium"] .tweak-card:hover,
+html[data-theme="xins-premium"] .sys-pcard:hover,
+html[data-theme="xins-premium"] .net-pcard:hover,
+html[data-theme="xins-premium"] .input-tool-card:hover,
+html[data-theme="xins-premium"] .xt-cleanup-card-shell:hover,
+html[data-theme="xins-premium"] .xt-startup-card:hover,
+html[data-theme="xins-premium"] .settings-control-card:hover,
+html[data-theme="xins-premium"] .settings-theme-card:hover,
+html[data-theme="xins-premium"] .settings-nav-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 214, 51, 0.30);
+  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.88), 0 0 28px rgba(255, 214, 51, 0.07), inset 0 1px 0 rgba(255, 240, 163, 0.10);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-free-hero {
+  min-height: 272px;
+  background:
+    radial-gradient(520px 280px at 82% 12%, rgba(255, 214, 51, 0.16), transparent 66%),
+    radial-gradient(360px 260px at 8% 100%, rgba(217, 169, 0, 0.075), transparent 72%),
+    linear-gradient(145deg, rgba(23, 20, 11, 0.94), rgba(8, 7, 4, 0.90) 58%, rgba(4, 4, 2, 0.96));
+  border-color: rgba(255, 214, 51, 0.19);
+  box-shadow: 0 22px 64px rgba(0, 0, 0, 0.86), 0 0 60px rgba(255, 214, 51, 0.055), inset 0 1px 0 rgba(255, 240, 163, 0.13), inset 0 -1px 0 rgba(0, 0, 0, 0.64);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-free-hero::before {
+  background: linear-gradient(110deg, transparent 25%, rgba(255, 240, 163, 0.045) 48%, transparent 70%);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .hero-grid-overlay {
+  opacity: 0.20;
+  background-image: linear-gradient(rgba(255, 214, 51, 0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 214, 51, 0.055) 1px, transparent 1px);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .orb {
+  background: rgba(255, 214, 51, 0.12);
+  filter: blur(2px);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .hero-badge,
+html[data-theme="xins-premium"] .xt-free-tweaks-kicker,
+html[data-theme="xins-premium"] .gaming-hero-eyebrow,
+html[data-theme="xins-premium"] .sys-hero-eyebrow,
+html[data-theme="xins-premium"] .side-panel-badge,
+html[data-theme="xins-premium"] .pcard-cat-pill,
+html[data-theme="xins-premium"] .gaming-meta-pill,
+html[data-theme="xins-premium"] .xt-tool-status-pill,
+html[data-theme="xins-premium"] .xt-tweak-status-pill {
+  color: #ffe45c;
+  background: rgba(255, 214, 51, 0.075);
+  border-color: rgba(255, 214, 51, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 163, 0.07);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .hero-title {
+  color: #f7f5ef;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  text-shadow: 0 8px 28px rgba(0, 0, 0, 0.52);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .hero-sub {
+  color: #aaa79f;
+}
+
+html[data-theme="xins-premium"] #page-dashboard .hero-stat,
+html[data-theme="xins-premium"] .xt-cleanup-summary-metric,
+html[data-theme="xins-premium"] .xt-startup-stat-chip,
+html[data-theme="xins-premium"] .gpu-meta-card,
+html[data-theme="xins-premium"] .gpu-stat-card {
+  background: linear-gradient(155deg, rgba(255, 214, 51, 0.055), rgba(255, 255, 255, 0.018));
+  border-color: rgba(255, 214, 51, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 163, 0.055), 0 10px 28px rgba(0, 0, 0, 0.30);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .hs-icon,
+html[data-theme="xins-premium"] .asset-icon,
+html[data-theme="xins-premium"] .pcard-icon-wrap,
+html[data-theme="xins-premium"] .xt-tweak-card-icon,
+html[data-theme="xins-premium"] .xt-startup-card-icon,
+html[data-theme="xins-premium"] .settings-row-icon {
+  color: #ffd633;
+  background: linear-gradient(145deg, rgba(255, 214, 51, 0.13), rgba(255, 214, 51, 0.025));
+  border-color: rgba(255, 214, 51, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 163, 0.09), 0 8px 22px rgba(0, 0, 0, 0.26);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .hs-val,
+html[data-theme="xins-premium"] #page-dashboard .asset-value,
+html[data-theme="xins-premium"] #page-dashboard .active-card-value,
+html[data-theme="xins-premium"] .xt-cleanup-summary-metric strong,
+html[data-theme="xins-premium"] .xt-startup-stat-chip strong {
+  color: #f7f5ef;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+html[data-theme="xins-premium"] #page-dashboard .assets-tab.active,
+html[data-theme="xins-premium"] #page-dashboard .temp-toggle button.active,
+html[data-theme="xins-premium"] .gaming-filter-active,
+html[data-theme="xins-premium"] .sys-filter-active,
+html[data-theme="xins-premium"] .input-segment.active,
+html[data-theme="xins-premium"] .settings-segmented button.is-selected {
+  color: #171106;
+  background: linear-gradient(180deg, #ffe45c, #d9a900);
+  border-color: rgba(255, 214, 51, 0.66);
+  box-shadow: 0 6px 18px rgba(255, 214, 51, 0.14), inset 0 1px 0 rgba(255, 240, 163, 0.62);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .side-panel {
+  background:
+    radial-gradient(300px 220px at 75% 0%, rgba(255, 214, 51, 0.10), transparent 66%),
+    linear-gradient(155deg, rgba(19, 17, 10, 0.92), rgba(7, 6, 4, 0.90));
+}
+
+html[data-theme="xins-premium"] #page-dashboard .discord-mark,
+html[data-theme="xins-premium"] #page-dashboard .discord-status-dot {
+  color: #ffd633;
+  background-color: #ffd633;
+  box-shadow: 0 0 14px rgba(255, 214, 51, 0.30);
+}
+
+html[data-theme="xins-premium"] .gaming-hero,
+html[data-theme="xins-premium"] .game-tune-hero,
+html[data-theme="xins-premium"] .sys-hero,
+html[data-theme="xins-premium"] .input-hero,
+html[data-theme="xins-premium"] .process-hero {
+  background:
+    radial-gradient(520px 260px at 82% 0%, rgba(255, 214, 51, 0.12), transparent 68%),
+    linear-gradient(150deg, rgba(20, 18, 11, 0.92), rgba(7, 6, 4, 0.92));
+  border-color: rgba(255, 214, 51, 0.16);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 240, 163, 0.08);
+}
+
+html[data-theme="xins-premium"] .toggle-switch,
+html[data-theme="xins-premium"] .settings-toggle {
+  width: 42px;
+  min-width: 42px;
+  height: 24px;
+}
+
+html[data-theme="xins-premium"] .toggle-slider,
+html[data-theme="xins-premium"] .settings-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.10);
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+html[data-theme="xins-premium"] .toggle-slider::before,
+html[data-theme="xins-premium"] .settings-toggle span {
+  width: 16px;
+  height: 16px;
+  background: #a8aaaf;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.48);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), background 220ms ease;
+}
+
+html[data-theme="xins-premium"] .toggle-switch input:checked + .toggle-slider,
+html[data-theme="xins-premium"] .settings-toggle.is-on {
+  background: linear-gradient(135deg, #d9a900, #ffd633 54%, #ffe45c);
+  border-color: rgba(255, 214, 51, 0.68);
+  box-shadow: 0 0 18px rgba(255, 214, 51, 0.18), inset 0 1px 0 rgba(255, 240, 163, 0.55);
+}
+
+html[data-theme="xins-premium"] .toggle-switch input:checked + .toggle-slider::before,
+html[data-theme="xins-premium"] .settings-toggle.is-on span {
+  background: #0a0a0a;
+  transform: translateX(18px);
+}
+
+html[data-theme="xins-premium"] .xt-cleanup-summary-note,
+html[data-theme="xins-premium"] .xt-cleanup-recent,
+html[data-theme="xins-premium"] .xt-startup-note,
+html[data-theme="xins-premium"] .xt-restore-status-row,
+html[data-theme="xins-premium"] .cu-status-cluster,
+html[data-theme="xins-premium"] .cu-pipeline {
+  background: rgba(255, 214, 51, 0.026);
+  border-color: rgba(255, 214, 51, 0.10);
+}
+
+html[data-theme="xins-premium"] #page-cleanup .cleanup-card {
+  border-left-color: rgba(255, 214, 51, 0.46);
+}
+
+html[data-theme="xins-premium"] #page-cleanup .xt-tweak-status-pill.is-ready span,
+html[data-theme="xins-premium"] #page-startup .xt-tweak-status-pill.is-ready span,
+html[data-theme="xins-premium"] .live-tag .dot,
+html[data-theme="xins-premium"] .asset-status .dot {
+  background: #ffd633;
+  box-shadow: 0 0 10px rgba(255, 214, 51, 0.34);
+}
+
+html[data-theme="xins-premium"] .settings-main-header h1,
+html[data-theme="xins-premium"] .xt-free-tweaks-header h1,
+html[data-theme="xins-premium"] .xt-cleanup-hero-copy h1,
+html[data-theme="xins-premium"] .xt-startup-hero-copy h1,
+html[data-theme="xins-premium"] .gaming-hero-title,
+html[data-theme="xins-premium"] .sys-hero-title {
+  color: #f7f5ef;
+  letter-spacing: -0.45px;
+}
+
+html[data-theme="xins-premium"] .settings-experience-card {
+  background:
+    radial-gradient(440px 220px at 92% 0%, rgba(255, 214, 51, 0.13), transparent 68%),
+    linear-gradient(145deg, rgba(22, 19, 10, 0.94), rgba(8, 7, 4, 0.90));
+}
+
+html[data-theme="xins-premium"] .settings-experience-kicker,
+html[data-theme="xins-premium"] .settings-section-heading > span,
+html[data-theme="xins-premium"] .settings-hub-copy > span,
+html[data-theme="xins-premium"] .settings-status-grid em {
+  color: #ffd633;
+}
+
+html[data-theme="xins-premium"] .settings-theme-card.is-selected,
+html[data-theme="xins-premium"] .settings-nav-card.is-selected,
+html[data-theme="xins-premium"] .settings-accent-finishes button.is-selected {
+  color: #fff6ca;
+  background: linear-gradient(145deg, rgba(255, 214, 51, 0.13), rgba(255, 214, 51, 0.025));
+  border-color: rgba(255, 214, 51, 0.40);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.48), 0 0 24px rgba(255, 214, 51, 0.08), inset 0 1px 0 rgba(255, 240, 163, 0.10);
+}
+
+html[data-theme="xins-premium"] .settings-theme-midnight .settings-theme-preview {
+  background:
+    radial-gradient(circle at 72% 18%, rgba(255, 214, 51, 0.30), transparent 38%),
+    linear-gradient(145deg, #17130a, #050402);
+  border-color: rgba(255, 214, 51, 0.24);
+}
+
+html[data-theme="xins-premium"] .settings-finish-pearl .settings-finish-swatch {
+  background: linear-gradient(135deg, #d9a900, #ffd633 48%, #fff0a3 74%, #e3b718);
+  box-shadow: 0 0 14px rgba(255, 214, 51, 0.20);
+}
+
+html[data-theme="xins-premium"] .xt-tweak-modal-backdrop {
+  background: rgba(2, 2, 1, 0.82);
+  backdrop-filter: blur(16px) saturate(145%);
+}
+
+html[data-theme="xins-premium"] .xt-tweak-modal-card,
+html[data-theme="xins-premium"] .process-modal,
+html[data-theme="xins-premium"] .ai-modal-card {
+  background:
+    radial-gradient(420px 220px at 80% 0%, rgba(255, 214, 51, 0.10), transparent 68%),
+    linear-gradient(155deg, rgba(20, 18, 11, 0.98), rgba(6, 5, 3, 0.98));
+  border-color: rgba(255, 214, 51, 0.20);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.90), inset 0 1px 0 rgba(255, 240, 163, 0.10);
+}
+
+html[data-theme="xins-premium"] .app-loading-screen {
+  background:
+    radial-gradient(440px 300px at 50% 42%, rgba(255, 214, 51, 0.07), transparent 70%),
+    #030302;
+}
+
+html[data-theme="xins-premium"] .app-loading-mark {
+  background: linear-gradient(145deg, rgba(28, 23, 9, 0.96), rgba(7, 6, 3, 0.98));
+  border-color: rgba(255, 214, 51, 0.26);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.76), 0 0 34px rgba(255, 214, 51, 0.10), inset 0 1px 0 rgba(255, 240, 163, 0.12);
+  animation-name: xtGoldLoadingMarkPulse;
+}
+
+html[data-theme="xins-premium"] .app-loading-spinner {
+  border-color: rgba(255, 214, 51, 0.12);
+  border-top-color: #ffd633;
+  box-shadow: 0 0 18px rgba(255, 214, 51, 0.08);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-free-hero .hero-cta,
+html[data-theme="xins-premium"] .xt-tweak-confirm-actions .xt-tweak-modal-btn:not(.ghost) {
+  color: #171106;
+  background: linear-gradient(180deg, #ffeb7a 0%, #ffd633 52%, #d9a900 100%);
+  border-color: rgba(255, 214, 51, 0.72);
+  box-shadow: 0 8px 24px rgba(255, 214, 51, 0.17), inset 0 1px 0 rgba(255, 240, 163, 0.74), inset 0 -1px 0 rgba(108, 79, 0, 0.24);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-free-hero .hero-cta:hover,
+html[data-theme="xins-premium"] .xt-tweak-confirm-actions .xt-tweak-modal-btn:not(.ghost):hover {
+  color: #171106;
+  background: linear-gradient(180deg, #fff09a 0%, #ffe45c 50%, #e3b718 100%);
+  border-color: rgba(255, 228, 92, 0.88);
+  box-shadow: 0 12px 32px rgba(255, 214, 51, 0.25), inset 0 1px 0 rgba(255, 244, 188, 0.90), inset 0 -1px 0 rgba(108, 79, 0, 0.20);
+  transform: translateY(-1px);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-free-hero .hero-cta:active,
+html[data-theme="xins-premium"] .xt-tweak-confirm-actions .xt-tweak-modal-btn:not(.ghost):active {
+  transform: scale(0.97) !important;
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-tweak-launch-card {
+  padding: 18px;
+  background:
+    radial-gradient(90% 74% at 10% 0%, rgba(255, 214, 51, 0.075), transparent 46%),
+    linear-gradient(160deg, rgba(19, 17, 10, 0.92), rgba(8, 7, 4, 0.92));
+  border-color: rgba(255, 214, 51, 0.13);
+  border-radius: 18px;
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.76), inset 0 1px 0 rgba(255, 240, 163, 0.075), inset 0 -1px 0 rgba(0, 0, 0, 0.52);
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms ease, box-shadow 240ms ease;
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-tweak-launch-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 214, 51, 0.30);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.84), 0 0 28px rgba(255, 214, 51, 0.075), inset 0 1px 0 rgba(255, 240, 163, 0.11), inset 0 -1px 0 rgba(0, 0, 0, 0.52);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-tweak-launch-card::after {
+  background: linear-gradient(145deg, rgba(255, 240, 163, 0.035), transparent 32%);
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-tweak-card-body h3,
+html[data-theme="xins-premium"] #page-dashboard .xt-free-section-header h2 {
+  color: #f7f5ef;
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-tweak-card-body p,
+html[data-theme="xins-premium"] #page-dashboard .xt-free-section-note,
+html[data-theme="xins-premium"] #page-dashboard .xt-premium-grid-note {
+  color: #aaa79f;
+}
+
+html[data-theme="xins-premium"] #page-dashboard .xt-tweak-card-footer {
+  border-top-color: rgba(255, 214, 51, 0.085);
+}
+
+html[data-theme="xins-premium"] .xt-tweak-include span {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.48);
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+html[data-theme="xins-premium"] .xt-tweak-include span::after {
+  background: #a8aaaf;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), background 220ms ease;
+}
+
+html[data-theme="xins-premium"] .xt-tweak-include input:checked + span {
+  background: linear-gradient(135deg, #d9a900, #ffd633 54%, #ffe45c);
+  border-color: rgba(255, 214, 51, 0.68);
+  box-shadow: 0 0 18px rgba(255, 214, 51, 0.18), inset 0 1px 0 rgba(255, 240, 163, 0.55);
+}
+
+html[data-theme="xins-premium"] .xt-tweak-include input:checked + span::after {
+  background: #0a0a0a;
+  transform: translateX(18px);
+}
+
+html[data-theme="xins-premium"] .xt-run-btn-icon {
+  color: #ffd633;
+  background: rgba(23, 17, 6, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 163, 0.09);
+}
+
+html[data-theme="xins-premium"] .xt-tweak-confirm-overlay {
+  background: rgba(2, 2, 1, 0.82);
+  backdrop-filter: blur(16px) saturate(145%);
+  -webkit-backdrop-filter: blur(16px) saturate(145%);
+}
+
+html[data-theme="xins-premium"] .xt-tweak-confirm-card {
+  background:
+    radial-gradient(420px 220px at 82% 0%, rgba(255, 214, 51, 0.10), transparent 68%),
+    linear-gradient(155deg, rgba(20, 18, 11, 0.98), rgba(6, 5, 3, 0.98));
+  border-color: rgba(255, 214, 51, 0.20);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.90), inset 0 1px 0 rgba(255, 240, 163, 0.10);
+}
+
+html[data-theme="xins-premium"] .xt-tweak-confirm-kicker,
+html[data-theme="xins-premium"] .xt-premium-grid-badge {
+  color: #ffe45c;
+}
+
+html[data-theme="xins-premium"] .xt-premium-grid-badge::before {
+  background: #ffd633;
+  box-shadow: 0 0 10px rgba(255, 214, 51, 0.30);
+}
+
+@keyframes xtGoldLoadingMarkPulse {
+  0%, 100% {
+    box-shadow: 0 18px 54px rgba(0, 0, 0, 0.76), 0 0 24px rgba(255, 214, 51, 0.08), inset 0 1px 0 rgba(255, 240, 163, 0.10);
+  }
+  50% {
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.80), 0 0 38px rgba(255, 214, 51, 0.15), 0 0 0 10px rgba(255, 214, 51, 0.025), inset 0 1px 0 rgba(255, 240, 163, 0.14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="xins-premium"] .asset-card,
+  html[data-theme="xins-premium"] .gaming-preset-card,
+  html[data-theme="xins-premium"] .toggle-card,
+  html[data-theme="xins-premium"] .slider-card,
+  html[data-theme="xins-premium"] .tweak-card,
+  html[data-theme="xins-premium"] .xt-cleanup-card-shell,
+  html[data-theme="xins-premium"] .xt-startup-card {
+    transition: none;
+  }
 }

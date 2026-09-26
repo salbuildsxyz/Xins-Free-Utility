@@ -1513,7 +1513,7 @@ function initializeSettingsPage() {
         navigationStyle: 'full'
     };
     const themeLabels = {
-        'xins-premium': 'Xins Premium',
+        'xins-premium': 'XTweaks Gold',
         obsidian: 'Obsidian',
         'silver-mist': 'Silver Mist',
         'frost-glass': 'Frost Glass'
