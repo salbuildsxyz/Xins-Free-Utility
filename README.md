@@ -1,56 +1,34 @@
-<div align="center">
-  <img src="assets/icon.ico" width="90" alt="XTweaks Free Logo" />
+# XTweaks Free
 
-  # XTweaks Free
+A Windows utility for cleanup, startup management, system monitoring,
+restore points, and basic PC tweaks for windows.
 
-  ### Clean Windows Utility
+## Screenshots
 
-  **Simple. Safe. Free.**
+<img width="1386" height="893" alt="image" src="https://github.com/user-attachments/assets/757bcc18-bd0e-462d-910a-78120880b906" />
 
-  XTweaks Free helps clean junk files, review startup apps, create restore points, and manage basic Windows maintenance from one clean app.
-</div>
 
----
+<img width="1397" height="892" alt="image" src="https://github.com/user-attachments/assets/83c01c4e-7839-4a2e-a5c4-fad0d082c5e3" />
 
-## ❔ Why use XTweaks Free?
 
-Keeping your PC clean should not be confusing, sketchy, or full of fake “boost” claims.
+## What it does
 
-XTweaks Free gives you simple cleanup tools, startup review, restore point controls, and basic Windows maintenance in one clean desktop app.
+- clean temp and cached files
+- manage startup applications
+- create and manage Windows restore points
+- view system information and live hardware stats
+- run basic maintenance tools
+- built-in safety checks for system-level actions
 
----
+## Download
 
-## ✨ Main Features
+download the Newest Windows installer from the Releases page in this repo
 
-- **Cleanup tools**
-- **Startup app manager**
-- **Restore point creation**
-- **Restore protection status**
-- **Safe cleanup confirmations**
-- **Smooth startup loading screen**
-- **Clean black-and-white dashboard**
-- **Simple tools for everyday PC maintenance**
+## Built with
 
----
+Electron • JavaScript • Node.js • PowerShell
 
-## 🖥️ Built For
+## Requirements
 
-XTweaks Free is designed for everyday Windows users who want a cleaner, smoother PC without digging through system menus.
-
-No login required.  
-No premium account required.  
-No fake scan results.  
-No confusing setup.
-
----
-
-## 📦 Download
-
-Download the latest version from the **Releases** page:
-
-➡️ **[Download XTweaks Free](../../releases/latest)**
-
-Install using:
-
-```text
-XTweaks Free Setup 1.0.1.exe
+- Windows 10 / 11
+- App needs administrator access to tweak windows
