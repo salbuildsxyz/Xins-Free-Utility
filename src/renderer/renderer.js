@@ -114,22 +114,72 @@ function getFreeHomeTweakIcon(name) {
         spark: '<path d="M13 2 6 13h5l-1 9 8-12h-5z"/><path d="M4 5l1.2 1.2M19 18l1.2 1.2M20 5l-1.2 1.2M5 18l-1.2 1.2"/>',
         power: '<path d="M12 2v10"/><path d="M18.4 5.6a9 9 0 1 1-12.8 0"/>',
         shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-5"/>',
-        wand: '<path d="m3 21 9-9"/><path d="m14 6 1.5-1.5"/><path d="m17 3 1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>'
+        wand: '<path d="m3 21 9-9"/><path d="m14 6 1.5-1.5"/><path d="m17 3 1 3 3 1-3 1-1 3-1-3-3-1 3-1z"/>',
+        crown: '<path d="M5 16 3 7l5 4 4-7 4 7 5-4-2 9z"/><path d="M5 20h14"/>',
+        play: '<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>',
+        scan: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+        plus: '<path d="M12 5v14M5 12h14"/>',
+        external: '<path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>',
+        user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+        clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+        info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'
     };
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons[name] || icons.trash}</svg>`;
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.trash}</svg>`;
 }
 
-function getPremiumActionButtonMarkup(label, attrs = '', iconPath = '<path d="M8 6.5v11l9-5.5z" fill="currentColor" stroke="none"/>') {
+// Cleanup, Startup and Restore read Windows-only locations; on other hosts the
+// renderer shows a neutral "Windows only" state instead of backend fallbacks.
+const IS_WINDOWS_HOST = /Windows/i.test(navigator.userAgent);
+
+function getPageHeaderMarkup({ eyebrow, title, description, aside = '' }) {
     return `
-        <button class="xt-tweak-run-btn" type="button" ${attrs}>
-            <span class="xt-run-btn-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    ${iconPath}
-                </svg>
-            </span>
-            <span class="xt-run-btn-label">${label}</span>
-        </button>
-    `;
+        <header class="xt-page-header">
+            <div class="xt-page-title">
+                <p class="home-eyebrow">${eyebrow}</p>
+                <h1>${title}</h1>
+                <p>${description}</p>
+            </div>
+            ${aside}
+        </header>`;
+}
+
+function getStatStripMarkup(stats) {
+    return `
+        <dl class="xt-stat-strip">
+            ${stats.map(({ label, id, value = '--' }) => `<div><dt>${label}</dt><dd id="${id}">${value}</dd></div>`).join('')}
+        </dl>`;
+}
+
+function getSidePanelMarkup({ icon, title, state = '', stateClass = '', body = '' }) {
+    return `
+        <article class="home-side-panel">
+            <div class="home-side-panel-heading">
+                <span class="home-icon">${getFreeHomeTweakIcon(icon)}</span>
+                <div><h3>${title}</h3>${state ? `<span class="home-state ${stateClass}">${state}</span>` : ''}</div>
+            </div>
+            ${body}
+        </article>`;
+}
+
+function getPremiumTeaserMarkup() {
+    return `
+        <article class="xt-premium-card">
+            <div class="xt-premium-card-head">
+                <span class="home-icon home-premium-icon">${getFreeHomeTweakIcon('crown')}</span>
+                <span class="xt-premium-badge">Premium</span>
+            </div>
+            <h3>Unlock advanced optimization</h3>
+            <p>Advanced presets, deeper cleanup, priority optimization, and additional system controls.</p>
+            <button class="home-button home-button-secondary home-button-compact" type="button" data-free-action="premium">View Premium</button>
+        </article>`;
+}
+
+function getEmptyStateMarkup(icon, title, message) {
+    return `
+        <div class="xt-empty-state">
+            <span class="home-icon">${getFreeHomeTweakIcon(icon)}</span>
+            <div><strong>${title}</strong><p>${message}</p></div>
+        </div>`;
 }
 
 function formatBytesCompact(bytes) {
@@ -145,62 +195,43 @@ function formatBytesCompact(bytes) {
     return `${size.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
 }
 
-function getFreeHomeTweakCardsMarkup() {
-    const premiumCard = `
-        <article class="asset-card glass xt-free-card xt-tweak-launch-card xt-premium-grid-card" data-premium-grid-card>
-            <div class="xt-tweak-card-top">
-                <div class="xt-tweak-card-icon">
-                    ${getFreeHomeTweakIcon('shield')}
+function getHomeTweakMarkup(card, compact = false) {
+    const category = card.requiresAdmin ? 'admin' : 'safe';
+    const statusClass = card.requiresAdmin ? 'requires-admin' : 'is-ready';
+    const status = `
+        <span class="xt-tweak-status-pill ${statusClass}" data-home-tweak-status="${card.id}">
+            <span></span>${card.status}
+        </span>`;
+    const include = `
+        <label class="xt-tweak-include" title="Include ${card.title} in selected cleanup">
+            <input type="checkbox" data-home-tweak-include="${card.id}" checked>
+            <span aria-hidden="true"></span>
+        </label>`;
+    const runButton = `
+        <button class="xt-tweak-run-btn" type="button" data-home-tweak-run="${card.id}">
+            <span class="xt-run-btn-label" data-home-tweak-run-label="${card.id}">Run</span>
+        </button>`;
+
+    if (compact) {
+        return `
+            <article class="home-tool-row xt-tweak-launch-card" data-home-tweak-card="${card.id}" data-home-category="${category}" data-home-tool="${card.title.toLowerCase()}">
+                <span class="home-icon">${getFreeHomeTweakIcon(card.icon)}</span>
+                <div class="home-tool-copy"><h3>${card.title}</h3><p>${card.description}</p></div>
+                <div class="home-row-actions">
+                    ${include}
+                    <div>${status}${runButton}</div>
                 </div>
-                <span class="xt-tweak-status-pill xt-premium-grid-badge">PREMIUM</span>
-            </div>
-            <div class="xt-tweak-card-body">
-                <h3>Unlock Premium Tools</h3>
-                <p>Get advanced presets, deeper cleanup, and priority optimization profiles.</p>
-            </div>
-            <div class="xt-tweak-card-footer">
-                <span class="xt-premium-grid-note">Advanced toolkit</span>
-                <button class="xt-tweak-run-btn xt-premium-grid-button" type="button" data-free-action="premium">
-                    <span class="xt-run-btn-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 3 8.7 9.1 2 10l4.9 4.7L5.8 21 12 18l6.2 3-1.1-6.3L22 10l-6.7-.9z"/>
-                        </svg>
-                    </span>
-                    <span class="xt-run-btn-label">View Premium</span>
-                </button>
-            </div>
-        </article>
-    `;
-    const tweakCards = FREE_HOME_TWEAK_CARDS.map((card) => `
-        <article class="asset-card glass xt-free-card xt-tweak-launch-card" data-home-tweak-card="${card.id}">
-            <div class="xt-tweak-card-top">
-                <div class="xt-tweak-card-icon">${getFreeHomeTweakIcon(card.icon)}</div>
-                <label class="xt-tweak-include" title="Include in Apply All">
-                    <input type="checkbox" data-home-tweak-include="${card.id}" checked>
-                    <span aria-hidden="true"></span>
-                </label>
-            </div>
-            <div class="xt-tweak-card-body">
-                <h3>${card.title}</h3>
-                <p>${card.description}</p>
-            </div>
-            <div class="xt-tweak-card-footer">
-                <span class="xt-tweak-status-pill ${card.requiresAdmin ? 'requires-admin' : 'is-ready'}" data-home-tweak-status="${card.id}">
-                    <span></span>${card.status}
-                </span>
-                <button class="xt-tweak-run-btn" type="button" data-home-tweak-run="${card.id}">
-                    <span class="xt-run-btn-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M8 6.5v11l9-5.5z"/>
-                        </svg>
-                    </span>
-                    <span class="xt-run-btn-label" data-home-tweak-run-label="${card.id}">Run</span>
-                </button>
-            </div>
-            <div class="xt-tweak-result" data-home-tweak-result="${card.id}">Ready</div>
-        </article>
-    `);
-    return [...tweakCards.slice(0, 3), premiumCard, ...tweakCards.slice(3)].join('');
+                <p class="xt-tweak-result" data-home-tweak-result="${card.id}"></p>
+            </article>`;
+    }
+
+    return `
+        <article class="home-tool-card xt-tweak-launch-card" data-home-tweak-card="${card.id}" data-home-category="${category}" data-home-tool="${card.title.toLowerCase()}">
+            <div class="home-tool-card-top"><span class="home-icon">${getFreeHomeTweakIcon(card.icon)}</span>${include}</div>
+            <div class="home-tool-copy"><h3>${card.title}</h3><p>${card.description}</p></div>
+            <div class="home-tool-card-footer">${status}${runButton}</div>
+            <p class="xt-tweak-result" data-home-tweak-result="${card.id}"></p>
+        </article>`;
 }
 
 function escapeStartupHtml(value) {
@@ -215,49 +246,66 @@ function escapeStartupHtml(value) {
 
 function getStartupPageMarkup() {
     return `
-        <section class="xt-startup-page">
-            <section class="xt-startup-hero">
-                <div class="xt-startup-hero-copy">
-                    <span class="xt-free-tweaks-kicker">STARTUP CONTROL</span>
-                    <h1>Startup</h1>
-                    <p>Review apps that launch with Windows, spot noisy startup entries, and disable safe items using the existing startup manager.</p>
-                    <div class="xt-startup-hero-actions">
-                        ${getPremiumActionButtonMarkup('Scan Startup Apps', 'id="startup-scan-btn"', '<path d="M12 2v10"/><path d="M18.4 5.6a9 9 0 1 1-12.8 0"/><path d="M12 12l4 4"/>')}
-                        ${getPremiumActionButtonMarkup('Disable Selected', 'id="startup-disable-selected-btn"', '<path d="M7 7h10"/><path d="M9 7V5h6v2"/><path d="M18 7l-1 11H7L6 7"/><path d="m10 12 2 2 4-4"/>')}
+        <section class="xt-page startup-page">
+            ${getPageHeaderMarkup({
+                eyebrow: 'Startup control',
+                title: 'Startup Apps',
+                description: 'Review apps that launch with Windows and disable entries classified as safe. Protected and unrecognized entries stay read-only.',
+                aside: getStatStripMarkup([
+                    { label: 'Total', id: 'startup-total-count' },
+                    { label: 'Enabled', id: 'startup-enabled-count' },
+                    { label: 'Review', id: 'startup-review-count' },
+                    { label: 'Protected', id: 'startup-protected-count' }
+                ])
+            })}
+            <div class="xt-page-grid">
+                <section class="xt-panel startup-panel" aria-labelledby="startup-list-title">
+                    <div class="xt-panel-head">
+                        <div>
+                            <h2 id="startup-list-title">Startup entries</h2>
+                            <p>Registry Run keys, Startup folder shortcuts, and supported scheduled tasks.</p>
+                        </div>
+                        <button class="home-button home-button-secondary home-button-compact" id="startup-disable-selected-btn" type="button" disabled>Disable selected</button>
                     </div>
-                </div>
-                <div class="xt-startup-hero-stats">
-                    <div class="xt-startup-stat-grid">
-                        <div class="xt-startup-stat-chip"><span>Total Apps</span><strong id="startup-total-count">--</strong></div>
-                        <div class="xt-startup-stat-chip"><span>Enabled</span><strong id="startup-enabled-count">--</strong></div>
-                        <div class="xt-startup-stat-chip"><span>Review</span><strong id="startup-review-count">--</strong></div>
-                        <div class="xt-startup-stat-chip"><span>Protected</span><strong id="startup-protected-count">--</strong></div>
+                    <div class="startup-list-head" aria-hidden="true">
+                        <span></span><span>App</span><span>Source</span><span>Status</span><span>Action</span>
                     </div>
-                    <div class="xt-startup-note" id="startup-page-note">Scan startup apps to load live entries from this PC.</div>
-                </div>
-            </section>
-
-            <section class="xt-startup-grid-shell">
-                <div class="xt-startup-grid-head">
-                    <div>
-                        <h2>Startup Apps</h2>
-                        <p>Entries are grouped from registry, Startup folder, and supported scheduled startup tasks.</p>
-                    </div>
-                </div>
-                <div class="xt-startup-grid" id="startup-app-grid"></div>
-            </section>
+                    <div class="startup-list" id="startup-app-grid" role="list"></div>
+                </section>
+                <aside class="xt-page-aside">
+                    ${getSidePanelMarkup({
+                        icon: 'power',
+                        title: 'Startup scan',
+                        state: IS_WINDOWS_HOST ? 'Local' : 'Windows only',
+                        stateClass: IS_WINDOWS_HOST ? '' : 'is-muted',
+                        body: `
+                            <p id="startup-page-note">Scan startup apps to load live entries from this PC.</p>
+                            <button class="home-text-button" id="startup-scan-btn" type="button">Rescan startup apps</button>`
+                    })}
+                    ${getSidePanelMarkup({
+                        icon: 'shield',
+                        title: 'Before you disable',
+                        state: 'Restart required',
+                        stateClass: 'is-admin',
+                        body: `
+                            <p>Only entries classified as safe or optional can be disabled here. Machine-wide entries need Administrator, and changes apply after the next restart.</p>
+                            <button class="home-text-button" type="button" data-home-page="restore">Create a restore point</button>`
+                    })}
+                    ${getPremiumTeaserMarkup()}
+                </aside>
+            </div>
         </section>
     `;
 }
 
 function getStartupStatus(entry) {
     const bucket = String(entry.bucket || '').toLowerCase();
-    if (entry.disabled || entry.state === 'Disabled') return { label: 'Disabled', cls: 'is-disabled' };
+    if (entry.disabled || entry.state === 'Disabled') return { label: 'Disabled', cls: 'is-muted' };
     if (bucket === 'protected') return { label: 'Protected', cls: 'is-protected' };
-    if (bucket === 'safe') return { label: 'Low Impact', cls: 'is-ready' };
-    if (bucket === 'optional') return { label: 'Optional', cls: 'is-ready' };
-    if (bucket === 'review' || bucket === 'unknown') return { label: 'Review', cls: 'requires-admin' };
-    return { label: entry.state || 'Enabled', cls: 'is-ready' };
+    if (bucket === 'safe') return { label: 'Low impact', cls: 'is-safe' };
+    if (bucket === 'optional') return { label: 'Optional', cls: 'is-safe' };
+    if (bucket === 'review' || bucket === 'unknown') return { label: 'Review', cls: 'is-review' };
+    return { label: entry.state || 'Enabled', cls: 'is-safe' };
 }
 
 function normalizeStartupEntries(data) {
@@ -284,40 +332,36 @@ function canDisableStartupEntry(entry) {
     return loc.includes('hkcu') || loc.includes('hklm') || loc.endsWith('.lnk') || loc.includes('\\start menu\\');
 }
 
-function getStartupCardMarkup(entry, index, isPreview = false) {
-    const name = entry.display || entry.name || 'Startup Item';
-    const category = entry.category || 'Startup App';
+
+function getStartupRowMarkup(entry, index) {
+    const name = entry.display || entry.name || 'Startup item';
+    const category = entry.category || 'Startup app';
     const source = entry.sourceLabel || entry.location || 'Startup entry';
     const command = entry.command || entry.path || entry.action || 'No path or command details available.';
     const status = getStartupStatus(entry);
-    const canDisable = canDisableStartupEntry(entry) && !isPreview;
-    const needsAdmin = !isPreview && entry.requiresAdmin && !entry.canDisableWithCurrentPrivs;
+    const canDisable = canDisableStartupEntry(entry);
+    const needsAdmin = entry.requiresAdmin && !entry.canDisableWithCurrentPrivs;
     const id = `startup-${index}`;
 
     return `
-        <article class="xt-startup-card" data-startup-card="${id}" data-startup-name="${escapeStartupHtml(entry.name || name)}" data-startup-location="${escapeStartupHtml(entry.location || '')}" data-can-disable="${canDisable ? 'true' : 'false'}">
-            <div class="xt-startup-card-top">
-                <div class="xt-startup-card-icon">${getFreeHomeTweakIcon(status.cls === 'is-protected' ? 'shield' : 'power')}</div>
-                <label class="xt-tweak-include xt-startup-include" title="Select to disable">
-                    <input type="checkbox" data-startup-select="${id}" ${canDisable ? '' : 'disabled'}>
-                    <span aria-hidden="true"></span>
-                </label>
+        <article class="startup-row" role="listitem" data-startup-card="${id}" data-startup-name="${escapeStartupHtml(entry.name || name)}" data-startup-location="${escapeStartupHtml(entry.location || '')}" data-can-disable="${canDisable ? 'true' : 'false'}">
+            <label class="xt-tweak-include" title="${canDisable ? 'Select to disable' : 'This entry cannot be disabled here'}">
+                <input type="checkbox" data-startup-select="${id}" aria-label="Select ${escapeStartupHtml(name)}" ${canDisable ? '' : 'disabled'}>
+                <span aria-hidden="true"></span>
+            </label>
+            <div class="startup-row-app">
+                <span class="home-icon">${getFreeHomeTweakIcon(status.cls === 'is-protected' ? 'shield' : 'power')}</span>
+                <div class="startup-row-copy">
+                    <h3>${escapeStartupHtml(name)}</h3>
+                    <p title="${escapeStartupHtml(command)}">${escapeStartupHtml(command)}</p>
+                </div>
             </div>
-            <div class="xt-startup-card-body">
-                <h3>${escapeStartupHtml(name)}</h3>
-                <p title="${escapeStartupHtml(command)}">${escapeStartupHtml(command)}</p>
-            </div>
-            <div class="xt-startup-card-meta">
-                <span class="xt-tweak-status-pill ${status.cls}"><span></span>${escapeStartupHtml(status.label)}</span>
-                <em>${escapeStartupHtml(source)}</em>
-            </div>
-            <div class="xt-startup-card-footer">
-                <span class="xt-startup-source">${escapeStartupHtml(category)}</span>
+            <div class="startup-row-source"><span>${escapeStartupHtml(source)}</span><small>${escapeStartupHtml(category)}</small></div>
+            <span class="xt-state-dot ${status.cls}" data-startup-status>${escapeStartupHtml(status.label)}</span>
+            <div class="startup-row-action">
                 ${canDisable
-                    ? getPremiumActionButtonMarkup('Disable', `data-startup-disable="${id}"`, '<path d="M6 12h12"/>')
-                    : needsAdmin
-                        ? '<span class="xt-startup-review-only">Requires Admin</span>'
-                        : '<span class="xt-startup-review-only">Review only</span>'}
+                    ? `<button class="home-button home-button-secondary home-button-compact" type="button" data-startup-disable="${id}">Disable</button>`
+                    : `<span class="startup-row-note">${needsAdmin ? 'Requires admin' : 'Review only'}</span>`}
             </div>
         </article>
     `;
@@ -334,8 +378,6 @@ function initializeStartupPage() {
     const disableSelectedBtn = document.getElementById('startup-disable-selected-btn');
     let currentEntries = [];
 
-    if (disableSelectedBtn) disableSelectedBtn.disabled = true;
-
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
@@ -343,50 +385,49 @@ function initializeStartupPage() {
 
     function updateDisableSelectedState() {
         if (!disableSelectedBtn) return;
-        const anyChecked = Boolean(grid?.querySelector('[data-startup-select]:checked'));
-        disableSelectedBtn.disabled = !anyChecked;
+        disableSelectedBtn.disabled = !grid?.querySelector('[data-startup-select]:checked');
     }
 
-    function updateStartupStats(entries, isPreview = false) {
-        const protectedCount = entries.filter(entry => String(entry.bucket || '').toLowerCase() === 'protected').length;
-        const reviewCount = entries.filter(entry => {
-            const bucket = String(entry.bucket || '').toLowerCase();
-            return bucket === 'review' || bucket === 'unknown';
-        }).length;
-        setText('startup-total-count', isPreview ? '--' : String(entries.length));
-        setText('startup-enabled-count', isPreview ? '--' : String(entries.filter(entry => !entry.disabled && entry.state !== 'Disabled').length));
-        setText('startup-review-count', isPreview ? '--' : String(reviewCount));
-        setText('startup-protected-count', isPreview ? '--' : String(protectedCount));
+    function updateStartupStats(entries) {
+        const bucketOf = (entry) => String(entry.bucket || '').toLowerCase();
+        setText('startup-total-count', String(entries.length));
+        setText('startup-enabled-count', String(entries.filter(entry => !entry.disabled && entry.state !== 'Disabled').length));
+        setText('startup-review-count', String(entries.filter(entry => ['review', 'unknown'].includes(bucketOf(entry))).length));
+        setText('startup-protected-count', String(entries.filter(entry => bucketOf(entry) === 'protected').length));
     }
 
-    function renderStartupCards(entries, isPreview = false) {
-        currentEntries = isPreview ? [] : entries;
+    function renderStartupRows(entries) {
+        currentEntries = entries;
         if (!grid) return;
-        if (!entries.length && !isPreview) {
-            grid.innerHTML = '<div class="xt-startup-empty">No startup apps were found in the supported startup locations.</div>';
-            updateStartupStats([]);
-            updateDisableSelectedState();
-            return;
-        }
-        grid.innerHTML = entries.map((entry, index) => getStartupCardMarkup(entry, index, isPreview)).join('');
-        updateStartupStats(isPreview ? [] : entries, isPreview);
-        grid.querySelectorAll('[data-startup-disable]').forEach(button => {
-            button.addEventListener('click', () => disableStartupCards([button.dataset.startupDisable]));
-        });
+        grid.innerHTML = entries.length
+            ? entries.map((entry, index) => getStartupRowMarkup(entry, index)).join('')
+            : getEmptyStateMarkup('power', 'No startup apps found', 'Nothing was found in the supported startup locations.');
+        updateStartupStats(entries);
         updateDisableSelectedState();
     }
 
-    // Event delegation for checkbox changes — scoped to grid
-    grid?.addEventListener('change', (e) => {
-        if (e.target?.dataset?.startupSelect !== undefined) updateDisableSelectedState();
-    });
+    function markRowDisabled(row) {
+        row.dataset.canDisable = 'false';
+        row.classList.add('is-disabled');
+        const statusEl = row.querySelector('[data-startup-status]');
+        if (statusEl) {
+            statusEl.className = 'xt-state-dot is-muted';
+            statusEl.textContent = 'Disabled';
+        }
+        const input = row.querySelector('[data-startup-select]');
+        if (input) { input.checked = false; input.disabled = true; }
+        const button = row.querySelector('[data-startup-disable]');
+        if (button) { button.textContent = 'Disabled'; button.disabled = true; }
+        const idx = currentEntries.findIndex(e => e.name === row.dataset.startupName && e.location === row.dataset.startupLocation);
+        if (idx >= 0) currentEntries[idx] = { ...currentEntries[idx], disabled: true };
+    }
 
-    async function disableStartupCards(cardIds) {
-        const disableableCards = cardIds
+    async function disableStartupRows(rowIds) {
+        const rows = rowIds
             .map(id => grid?.querySelector(`[data-startup-card="${id}"]`))
             .filter(el => el && el.dataset.canDisable === 'true');
 
-        if (!disableableCards.length) {
+        if (!rows.length) {
             showNotification('info', 'Nothing to Disable', 'Select a disableable startup app first.');
             return;
         }
@@ -397,26 +438,16 @@ function initializeStartupPage() {
         let successCount = 0;
         let failCount = 0;
 
-        for (const card of disableableCards) {
-            const button = card.querySelector('[data-startup-disable]');
-            const name = card.dataset.startupName || 'Startup item';
-            const location = card.dataset.startupLocation || '';
+        for (const row of rows) {
+            const button = row.querySelector('[data-startup-disable]');
+            const name = row.dataset.startupName || 'Startup item';
+            const location = row.dataset.startupLocation || '';
             if (button) button.disabled = true;
             try {
                 const result = await window.electronAPI.disableStartupEntry(name, location);
                 if (result?.success) {
                     successCount++;
-                    card.dataset.canDisable = 'false';
-                    card.classList.add('is-disabled');
-                    const statusEl = card.querySelector('.xt-tweak-status-pill');
-                    if (statusEl) { statusEl.className = 'xt-tweak-status-pill is-disabled'; statusEl.innerHTML = '<span></span>Disabled'; }
-                    const input = card.querySelector('[data-startup-select]');
-                    if (input) { input.checked = false; input.disabled = true; }
-                    const lbl = button?.querySelector('.xt-run-btn-label');
-                    if (lbl) lbl.textContent = 'Disabled';
-                    // Mark in currentEntries for stat sync
-                    const idx = currentEntries.findIndex(e => e.name === name && e.location === location);
-                    if (idx >= 0) currentEntries[idx] = { ...currentEntries[idx], disabled: true };
+                    markRowDisabled(row);
                 } else {
                     failCount++;
                     if (button) button.disabled = false;
@@ -436,9 +467,10 @@ function initializeStartupPage() {
         updateDisableSelectedState();
         updateStartupStats(currentEntries);
 
+        const plural = successCount === 1 ? 'y' : 'ies';
         if (successCount > 0 && failCount === 0) {
-            showNotification('success', 'Startup Disabled', `${successCount} entr${successCount === 1 ? 'y' : 'ies'} disabled. Restart to take effect.`);
-            if (note) note.textContent = `${successCount} entr${successCount === 1 ? 'y' : 'ies'} disabled. Restart required for changes to take effect.`;
+            showNotification('success', 'Startup Disabled', `${successCount} entr${plural} disabled. Restart to take effect.`);
+            if (note) note.textContent = `${successCount} entr${plural} disabled. Restart required for changes to take effect.`;
         } else if (successCount > 0) {
             showNotification('warning', 'Partially Disabled', `${successCount} disabled, ${failCount} could not be disabled.`);
         }
@@ -457,17 +489,16 @@ function initializeStartupPage() {
         try {
             const data = await window.electronAPI.getStartupContext();
             const entries = normalizeStartupEntries(data);
+            renderStartupRows(entries);
             if (entries.length) {
-                renderStartupCards(entries);
-                const adminNote = data.isAdmin ? '' : ' (HKLM entries require admin to disable)';
+                const adminNote = data.isAdmin ? '' : ' Machine-wide entries require Administrator to disable.';
                 if (note) note.textContent = `${entries.length} startup entr${entries.length === 1 ? 'y' : 'ies'} loaded from this PC.${adminNote}`;
-                scheduleStartupCardsOnEntry({ source: 'scan' });
-            } else {
-                renderStartupCards([]);
-                if (note) note.textContent = 'No startup entries found in the supported locations.';
+                schedulePageEntry('startup', { selector: '.startup-row' });
+            } else if (note) {
+                note.textContent = 'No startup entries found in the supported locations.';
             }
         } catch (error) {
-            if (grid) grid.innerHTML = '<div class="xt-startup-empty">Startup scan failed. Try again or run as Administrator.</div>';
+            if (grid) grid.innerHTML = getEmptyStateMarkup('info', 'Startup scan failed', 'Try again, or relaunch XTweaks Free as Administrator.');
             if (note) note.textContent = 'Scan failed. Check if the app is running as Administrator.';
             showNotification('error', 'Startup Scan Failed', error?.message || 'Could not scan startup apps.');
         } finally {
@@ -475,14 +506,28 @@ function initializeStartupPage() {
         }
     }
 
+    if (!IS_WINDOWS_HOST) {
+        if (scanBtn) scanBtn.disabled = true;
+        if (note) note.textContent = 'Startup entries are read from the Windows registry and Startup folder. Nothing is scanned on this system.';
+        if (grid) grid.innerHTML = getEmptyStateMarkup('power', 'Windows only', 'Startup management is available when XTweaks Free runs on Windows.');
+        return;
+    }
+
+    grid?.addEventListener('change', (event) => {
+        if (event.target?.dataset?.startupSelect !== undefined) updateDisableSelectedState();
+    });
+    grid?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-startup-disable]');
+        if (button) disableStartupRows([button.dataset.startupDisable]);
+    });
     scanBtn?.addEventListener('click', scanStartupApps);
     disableSelectedBtn?.addEventListener('click', () => {
         const ids = Array.from(grid?.querySelectorAll('[data-startup-select]:checked') || [])
             .map(input => input.dataset.startupSelect);
-        disableStartupCards(ids);
+        disableStartupRows(ids);
     });
 
-    if (grid) grid.innerHTML = '<div class="xt-startup-empty">Navigate to this tab to scan your startup apps automatically.</div>';
+    if (grid) grid.innerHTML = getEmptyStateMarkup('scan', 'Waiting for scan', 'Startup apps load automatically when this page opens.');
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -494,7 +539,6 @@ function initializeApp() {
     initializeFreeDashboardContent();
     initializeStartupPage();
     initializeRestorePointPage();
-    initializeFreeDashboardBackground();
     initializeNavigation();
     initializeTweaks();
     initializeCleanupDashboard();
@@ -523,553 +567,112 @@ function initializeApp() {
     initializeAboutTilt();
 }
 
-function getFreeDashboardHomeMarkup() {
-    return `
-        <canvas class="xt-reactive-bg" id="xt-reactive-bg" aria-hidden="true"></canvas>
-        <section class="hero glass xt-free-hero" id="hero-card">
-            <div class="hero-content">
-                <span class="hero-badge">FREE VERSION</span>
-                <h1 class="hero-title">Keep Your PC Running Smoothly</h1>
-                <p class="hero-sub">Apply safe cleanup tweaks, clear cache, and keep your system feeling fresh.</p>
-                <div class="hero-actions">
-                    <button class="hero-cta" type="button" data-free-action="apply-all-tweaks">
-                        <span class="xt-run-btn-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M9.2 7.4 18 12l-8.8 4.6z"/>
-                                <path d="M5.4 7.2h1.8v9.6H5.4z"/>
-                            </svg>
-                        </span>
-                        <span>Apply All Tweaks</span>
-                    </button>
-                    <button class="hero-cta-ghost" id="hero-system-info-btn" type="button" data-free-action="details">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="4" width="18" height="14" rx="2"/>
-                            <path d="M8 22h8M12 18v4M8 9h8M8 13h5"/>
-                        </svg>
-                        View System Info
-                    </button>
-                </div>
-            </div>
-        </section>
+function initializeFreeDashboardContent() {
+    const recommendedGrid = document.getElementById('home-recommended-grid');
+    const maintenanceList = document.getElementById('home-maintenance-list');
+    if (!recommendedGrid || !maintenanceList) return;
 
-        <div class="dash-row-1 xt-free-dashboard">
-            <div class="assets-block">
-                <div class="assets-header xt-free-section-header">
-                    <h2>Free Tweaks</h2>
-                    <div class="xt-stat-view-tabs" aria-hidden="true">
-                        <span class="is-active">Selected</span>
-                        <span>Safe</span>
-                        <span>Admin</span>
-                    </div>
-                </div>
-                <div class="assets-grid xt-free-tweaks-grid">
-                    ${getFreeHomeTweakCardsMarkup()}
-                </div>
-                <div class="assets-grid xt-free-stats-grid">
-
-                    <article class="asset-card glass xt-free-card xt-stat-card">
-                        <div class="xt-stat-head">
-                            <div class="xt-stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="5" y="5" width="14" height="14" rx="1.5"/>
-                                    <rect x="8.5" y="8.5" width="7" height="7" rx="0.8"/>
-                                    <path d="M9 2v3M12 2v3M15 2v3M9 19v3M12 19v3M15 19v3M2 9h3M2 12h3M2 15h3M19 9h3M19 12h3M19 15h3"/>
-                                </svg>
-                            </div>
-                            <div class="xt-stat-titles">
-                                <div class="xt-stat-name">CPU <span class="xt-status-pill">LIVE</span></div>
-                                <div class="xt-stat-sub" id="free-cpu-model">--</div>
-                            </div>
-                        </div>
-                        <div class="xt-stat-metric" id="cpu-usage">--<span class="xt-stat-unit">%</span></div>
-                        <div class="xt-free-sparkline-wrap">
-                            <svg class="xt-free-sparkline" viewBox="0 0 100 44" preserveAspectRatio="none" aria-hidden="true">
-                                <defs>
-                                    <linearGradient id="cpuFreeGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
-                                        <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-                                    </linearGradient>
-                                </defs>
-                                <line x1="0" y1="15" x2="100" y2="15" stroke="rgba(255,255,255,0.07)" stroke-width="0.5" stroke-dasharray="2 2"/>
-                                <line x1="0" y1="30" x2="100" y2="30" stroke="rgba(255,255,255,0.07)" stroke-width="0.5" stroke-dasharray="2 2"/>
-                                <path id="cpu-free-area" fill="url(#cpuFreeGrad)" d=""/>
-                                <path id="cpu-free-line" fill="none" stroke="rgba(255,255,255,0.62)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d=""/>
-                            </svg>
-                        </div>
-                        <div class="xt-stat-details">
-                            <div><span>Cores</span><strong id="cpu-detail-cores">--</strong></div>
-                            <div><span>Clock</span><strong>--</strong></div>
-                            <div><span>Temp</span><strong id="cpu-detail-temp">--°C</strong></div>
-                        </div>
-                    </article>
-
-                    <article class="asset-card glass xt-free-card xt-stat-card">
-                        <div class="xt-stat-head">
-                            <div class="xt-stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="6" width="20" height="12" rx="1.5"/>
-                                    <circle cx="8" cy="12" r="2.2"/>
-                                    <circle cx="15.5" cy="12" r="2.2"/>
-                                    <path d="M2 19v1.5M5 19v1.5M8 19v1.5M11 19v1.5M14 19v1.5M17 19v1.5M20 19v1.5"/>
-                                </svg>
-                            </div>
-                            <div class="xt-stat-titles">
-                                <div class="xt-stat-name">GPU <span class="xt-status-pill">LIVE</span></div>
-                                <div class="xt-stat-sub" id="free-gpu-model">--</div>
-                            </div>
-                        </div>
-                        <div class="xt-stat-metric" id="gpu-usage">--<span class="xt-stat-unit">%</span></div>
-                        <div class="xt-free-sparkline-wrap">
-                            <svg class="xt-free-sparkline" viewBox="0 0 100 44" preserveAspectRatio="none" aria-hidden="true">
-                                <defs>
-                                    <linearGradient id="gpuFreeGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="#b8b8b8" stop-opacity="0.28"/>
-                                        <stop offset="100%" stop-color="#b8b8b8" stop-opacity="0"/>
-                                    </linearGradient>
-                                </defs>
-                                <line x1="0" y1="15" x2="100" y2="15" stroke="rgba(255,255,255,0.07)" stroke-width="0.5" stroke-dasharray="2 2"/>
-                                <line x1="0" y1="30" x2="100" y2="30" stroke="rgba(255,255,255,0.07)" stroke-width="0.5" stroke-dasharray="2 2"/>
-                                <path id="gpu-free-area" fill="url(#gpuFreeGrad)" d=""/>
-                                <path id="gpu-free-line" fill="none" stroke="rgba(195,195,195,0.62)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d=""/>
-                            </svg>
-                        </div>
-                        <div class="xt-stat-details">
-                            <div><span>VRAM</span><strong>--</strong></div>
-                            <div><span>Driver</span><strong>--</strong></div>
-                            <div><span>Temp</span><strong id="gpu-detail-temp">--°C</strong></div>
-                        </div>
-                    </article>
-
-                    <article class="asset-card glass xt-free-card xt-stat-card">
-                        <div class="xt-stat-head">
-                            <div class="xt-stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="8" width="20" height="8" rx="1.5"/>
-                                    <path d="M6 8V6M10 8V6M14 8V6M18 8V6M6 16v2M10 16v2M14 16v2M18 16v2"/>
-                                    <path d="M8 11h1M12 11h1M16 11h1"/>
-                                </svg>
-                            </div>
-                            <div class="xt-stat-titles">
-                                <div class="xt-stat-name">Memory <span class="xt-status-pill">LIVE</span></div>
-                                <div class="xt-stat-sub" id="free-ram-info">--</div>
-                            </div>
-                        </div>
-                        <div class="xt-stat-metric" id="memory-usage">--<span class="xt-stat-unit">%</span></div>
-                        <div class="xt-free-sparkline-wrap">
-                            <svg class="xt-free-sparkline" viewBox="0 0 100 44" preserveAspectRatio="none" aria-hidden="true">
-                                <defs>
-                                    <linearGradient id="memFreeGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="#d4d4d4" stop-opacity="0.26"/>
-                                        <stop offset="100%" stop-color="#d4d4d4" stop-opacity="0"/>
-                                    </linearGradient>
-                                </defs>
-                                <line x1="0" y1="15" x2="100" y2="15" stroke="rgba(255,255,255,0.07)" stroke-width="0.5" stroke-dasharray="2 2"/>
-                                <line x1="0" y1="30" x2="100" y2="30" stroke="rgba(255,255,255,0.07)" stroke-width="0.5" stroke-dasharray="2 2"/>
-                                <path id="mem-free-area" fill="url(#memFreeGrad)" d=""/>
-                                <path id="mem-free-line" fill="none" stroke="rgba(220,220,220,0.62)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" d=""/>
-                            </svg>
-                        </div>
-                        <div class="xt-stat-details">
-                            <div><span>Used</span><strong id="mem-detail-used">-- GB</strong></div>
-                            <div><span>Free</span><strong id="mem-detail-free">-- GB</strong></div>
-                            <div><span>Total</span><strong id="mem-detail-total">-- GB</strong></div>
-                        </div>
-                    </article>
-
-                    <article class="asset-card glass xt-free-card xt-stat-card xt-overview-stat-card">
-                        <div class="xt-stat-head">
-                            <div class="xt-stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                                    <path d="m9 12 2 2 4-5"/>
-                                </svg>
-                            </div>
-                            <div class="xt-stat-titles">
-                                <div class="xt-stat-name">PC Overview <span class="xt-status-pill">LIVE</span></div>
-                                <div class="xt-stat-sub">System health snapshot</div>
-                            </div>
-                        </div>
-                        <div class="xt-overview-svg-wrap" aria-hidden="true">
-                            <div class="trend-yaxis">
-                                <span>100%</span>
-                                <span>50%</span>
-                                <span>0%</span>
-                            </div>
-                            <svg class="xt-overview-svg" viewBox="0 0 100 60" preserveAspectRatio="none">
-                                <defs>
-                                    <linearGradient id="overviewGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
-                                        <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-                                    </linearGradient>
-                                </defs>
-                                <line class="trend-grid-line" x1="0" y1="3" x2="100" y2="3"/>
-                                <line class="trend-grid-line" x1="0" y1="30" x2="100" y2="30"/>
-                                <line class="trend-grid-line" x1="0" y1="57" x2="100" y2="57"/>
-                                <path class="area" id="overview-trend-area" fill="url(#overviewGrad)" d=""/>
-                                <path class="line" id="overview-trend-line" d=""/>
-                            </svg>
-                        </div>
-                        <div class="xt-stat-details xt-overview-stat-details">
-                            <div><span>Disk</span><strong id="overview-disk">--%</strong></div>
-                            <div><span>Startup</span><strong id="overview-startup">-- apps</strong></div>
-                            <div><span>Health</span><strong id="overview-health">--/100</strong></div>
-                        </div>
-                    </article>
-
-                </div>
-            </div>
-
-        </div>
-
-        <div class="xt-tweak-confirm-overlay" id="free-tweak-confirm-modal" aria-hidden="true">
-            <div class="xt-tweak-confirm-card" role="dialog" aria-modal="true" aria-labelledby="free-tweak-confirm-title">
-                <div class="xt-tweak-confirm-head">
-                    <span class="xt-tweak-confirm-kicker">Confirm cleanup</span>
-                    <h2 id="free-tweak-confirm-title">Apply selected free tweaks?</h2>
-                    <p>This clears cache and temporary files. Some apps may rebuild cached data, and locked files will be skipped safely.</p>
-                </div>
-                <div class="xt-tweak-confirm-list" id="free-tweak-confirm-list"></div>
-                <div class="xt-tweak-confirm-warning">Only selected safe internal actions will run. The risky Windows Installer PatchCache cleanup is excluded.</div>
-                <div class="xt-tweak-confirm-actions">
-                    <button type="button" class="xt-tweak-modal-btn ghost" data-free-tweak-cancel>Cancel</button>
-                    <button type="button" class="xt-tweak-modal-btn" data-free-tweak-apply>Apply</button>
-                </div>
-            </div>
-        </div>
-
-        <span id="cpu-bar" style="display:none"></span>
-        <span id="gpu-bar" style="display:none"></span>
-        <span id="memory-bar" style="display:none"></span>
-        <span id="disk-bar" style="display:none"></span>
-        <span id="disk-usage" style="display:none">0%</span>
-        <span id="cpu-temp" style="display:none">--°C</span>
-        <span id="gpu-temp" style="display:none">--°C</span>
-        <span id="cpu-temp-circle" style="display:none"></span>
-        <span id="gpu-temp-circle" style="display:none"></span>
-        <span id="net-up" style="display:none"></span>
-        <span id="net-down" style="display:none"></span>
-        <span id="sys-cpu" style="display:none"></span>
-        <span id="sys-cores" style="display:none"></span>
-        <span id="sys-ram" style="display:none"></span>
-        <span id="sys-platform" style="display:none"></span>
-        <span id="sys-hostname" style="display:none"></span>
-        <span id="sys-uptime" style="display:none"></span>
-    `;
+    recommendedGrid.innerHTML = FREE_HOME_TWEAK_CARDS
+        .slice(0, 3)
+        .map((card) => getHomeTweakMarkup(card))
+        .join('');
+    maintenanceList.innerHTML = FREE_HOME_TWEAK_CARDS
+        .slice(3)
+        .map((card) => getHomeTweakMarkup(card, true))
+        .join('');
 }
 
-function initializeFreeDashboardContent() {
-    const page = document.getElementById('page-dashboard');
-    if (!page) return;
-    page.innerHTML = getFreeDashboardHomeMarkup();
-    return;
 
-    page.innerHTML = `
-        <canvas class="xt-reactive-bg" id="xt-reactive-bg" aria-hidden="true"></canvas>
-        <section class="hero glass xt-free-hero" id="hero-card">
-            <div class="hero-content">
-                <div class="xt-free-title-row">
-                    <h1 class="hero-title">Xin's Free Utility</h1>
-                    <span class="hero-badge">Free Version</span>
-                </div>
-                <p class="hero-sub">Safe, simple tools to clean, review, and optimize your PC.</p>
-            </div>
-        </section>
-
-        <div class="dash-row-1 xt-free-dashboard">
-            <div class="assets-block">
-                <div class="assets-grid">
-
-                    <!-- Row 1: Tools -->
-                    <article class="asset-card glass xt-free-card xt-cleanup-card">
-                        <div class="xt-free-card-head">
-                            <div class="asset-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M3 6h18"/>
-                                    <path d="M8 6V4h8v2"/>
-                                    <path d="M19 6l-1 14H6L5 6"/>
-                                    <path d="M10 11v5M14 11v5"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3>Quick Cleanup <span class="xt-status-pill">SAFE PREVIEW</span></h3>
-                                <p>Preview temporary files and safe cache items.</p>
-                            </div>
-                        </div>
-                        <div class="xt-cleanup-metric-row">
-                            <div class="xt-free-metric"><strong>1.24</strong><span>GB</span></div>
-                            <span class="xt-cleanup-label">Safe junk found</span>
-                        </div>
-                        <div class="xt-cleanup-breakdown">
-                            <div class="xt-cleanup-row"><span>Temp Files</span><span>620 MB</span></div>
-                            <div class="xt-cleanup-row"><span>Cache</span><span>410 MB</span></div>
-                            <div class="xt-cleanup-row"><span>Logs</span><span>210 MB</span></div>
-                        </div>
-                        <button class="xt-free-button xt-cleanup-btn" type="button" data-free-action="cleanup">Clear Temp Files</button>
-                    </article>
-
-                    <article class="asset-card glass xt-free-card xt-startup-card">
-                        <div class="xt-free-card-head">
-                            <div class="asset-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 2v10"/>
-                                    <path d="M18.4 5.6a9 9 0 1 1-12.8 0"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3>Startup Apps <span class="xt-status-pill">ACTIVE</span></h3>
-                                <p>Manage apps that run when Windows starts.</p>
-                            </div>
-                        </div>
-                        <div class="xt-startup-list">
-                            <div class="xt-startup-row"><span>Spotify</span><em>High impact</em><button class="xt-free-toggle is-on" type="button" aria-label="Spotify startup toggle"></button></div>
-                            <div class="xt-startup-row"><span>Discord</span><em>Medium impact</em><button class="xt-free-toggle is-on" type="button" aria-label="Discord startup toggle"></button></div>
-                            <div class="xt-startup-row"><span>OneDrive</span><em>Low impact</em><button class="xt-free-toggle is-on" type="button" aria-label="OneDrive startup toggle"></button></div>
-                        </div>
-                        <button class="xt-free-row-action" type="button" data-free-action="startup">Manage Startup Apps<span>›</span></button>
-                    </article>
-
-                    <article class="asset-card glass xt-free-card xt-summary-card">
-                        <div class="xt-free-card-head">
-                            <div class="asset-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="4" width="18" height="13" rx="2"/>
-                                    <path d="M8 21h8M12 17v4"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3>System Summary <span class="xt-status-pill">LIVE</span></h3>
-                            </div>
-                        </div>
-                        <div class="xt-summary-list">
-                            <div class="xt-summary-row"><span>CPU</span><b>23%</b><i style="--fill:23%"></i><em>Intel Core i5-12400F</em></div>
-                            <div class="xt-summary-row"><span>RAM</span><b>48%</b><i style="--fill:48%"></i><em>7.6 GB / 16 GB</em></div>
-                            <div class="xt-summary-row"><span>Disk (C:)</span><b>36%</b><i style="--fill:36%"></i><em>171 GB / 476 GB SSD</em></div>
-                        </div>
-                        <button class="xt-free-row-action" type="button" data-free-action="details">View Details<span>›</span></button>
-                    </article>
-
-                    <!-- Row 2: Live stat cards -->
-                    <article class="asset-card glass xt-free-card xt-stat-card xt-cpu-stat-card">
-                        <div class="xt-stat-head">
-                            <div class="xt-stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="5" y="5" width="14" height="14" rx="1.5"/>
-                                    <rect x="8.5" y="8.5" width="7" height="7" rx="0.8"/>
-                                    <path d="M9 2v3M12 2v3M15 2v3M9 19v3M12 19v3M15 19v3M2 9h3M2 12h3M2 15h3M19 9h3M19 12h3M19 15h3"/>
-                                </svg>
-                            </div>
-                            <div class="xt-stat-titles">
-                                <div class="xt-stat-name">CPU <span class="xt-status-pill">LIVE</span></div>
-                                <div class="xt-stat-sub">Intel Core i5-12400F</div>
-                            </div>
-                            <div class="xt-stat-metric">23<span class="xt-stat-unit">%</span></div>
-                        </div>
-                        <div class="xt-stat-bar-wrap"><div class="xt-stat-bar" style="--bar-fill:23%"></div></div>
-                        <div class="xt-stat-details">
-                            <div class="xt-stat-detail-row"><span>Cores</span><span>6</span></div>
-                            <div class="xt-stat-detail-row"><span>Threads</span><span>12</span></div>
-                            <div class="xt-stat-detail-row"><span>Temp</span><span>45°C</span></div>
-                        </div>
-                    </article>
-
-                    <article class="asset-card glass xt-free-card xt-stat-card xt-gpu-stat-card">
-                        <div class="xt-stat-head">
-                            <div class="xt-stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="6" width="20" height="12" rx="1.5"/>
-                                    <circle cx="8" cy="12" r="2.2"/>
-                                    <circle cx="15.5" cy="12" r="2.2"/>
-                                    <path d="M2 19v1.5M5 19v1.5M8 19v1.5M11 19v1.5M14 19v1.5M17 19v1.5M20 19v1.5"/>
-                                </svg>
-                            </div>
-                            <div class="xt-stat-titles">
-                                <div class="xt-stat-name">GPU <span class="xt-status-pill">LIVE</span></div>
-                                <div class="xt-stat-sub">Graphics Processor</div>
-                            </div>
-                            <div class="xt-stat-metric">0<span class="xt-stat-unit">%</span></div>
-                        </div>
-                        <div class="xt-stat-bar-wrap"><div class="xt-stat-bar" style="--bar-fill:0%"></div></div>
-                        <div class="xt-stat-details">
-                            <div class="xt-stat-detail-row"><span>VRAM</span><span>--</span></div>
-                            <div class="xt-stat-detail-row"><span>Driver</span><span>--</span></div>
-                            <div class="xt-stat-detail-row"><span>Temp</span><span>50°C</span></div>
-                        </div>
-                    </article>
-
-                    <article class="asset-card glass xt-free-card xt-stat-card xt-mem-stat-card">
-                        <div class="xt-stat-head">
-                            <div class="xt-stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="8" width="20" height="8" rx="1.5"/>
-                                    <path d="M6 8V6M10 8V6M14 8V6M18 8V6M6 16v2M10 16v2M14 16v2M18 16v2"/>
-                                    <path d="M8 11h1M12 11h1M16 11h1"/>
-                                </svg>
-                            </div>
-                            <div class="xt-stat-titles">
-                                <div class="xt-stat-name">Memory <span class="xt-status-pill">LIVE</span></div>
-                                <div class="xt-stat-sub">16 GB DDR</div>
-                            </div>
-                            <div class="xt-stat-metric">48<span class="xt-stat-unit">%</span></div>
-                        </div>
-                        <div class="xt-stat-bar-wrap"><div class="xt-stat-bar" style="--bar-fill:48%"></div></div>
-                        <div class="xt-stat-details">
-                            <div class="xt-stat-detail-row"><span>Used</span><span>7.6 GB</span></div>
-                            <div class="xt-stat-detail-row"><span>Free</span><span>8.4 GB</span></div>
-                            <div class="xt-stat-detail-row"><span>Total</span><span>16 GB</span></div>
-                        </div>
-                    </article>
-
-                    <!-- Row 3: Restore + PC Overview -->
-                    <article class="asset-card glass xt-free-card xt-restore-card">
-                        <div class="xt-free-card-head">
-                            <div class="asset-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M3 12a9 9 0 0 1 15.1-6.6"/>
-                                    <path d="M18 2v4h-4"/>
-                                    <path d="M21 12a9 9 0 0 1-15.1 6.6"/>
-                                    <path d="M6 22v-4h4"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3>Create Restore Point</h3>
-                                <p>It’s recommended to create a restore point before applying tweaks.</p>
-                            </div>
-                        </div>
-                        <button class="xt-free-button" type="button" data-free-action="restore">Create Now</button>
-                    </article>
-
-                    <article class="asset-card glass xt-free-card xt-stat-card xt-overview-card">
-                        <div class="xt-stat-head">
-                            <div class="xt-stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                                    <path d="m9 12 2 2 4-5"/>
-                                </svg>
-                            </div>
-                            <div class="xt-stat-titles">
-                                <div class="xt-stat-name">PC Overview</div>
-                                <div class="xt-stat-sub">Basic health snapshot</div>
-                            </div>
-                            <div class="xt-stat-metric xt-metric-text">Good <span class="xt-status-pill">GOOD</span></div>
-                        </div>
-                        <div class="xt-overview-details">
-                            <div class="xt-overview-cell"><span>Disk (C:)</span><strong>36%</strong></div>
-                            <div class="xt-overview-cell"><span>Startup</span><strong>3 apps</strong></div>
-                            <div class="xt-overview-cell"><span>Status</span><strong class="xt-overview-protected">Protected</strong></div>
-                        </div>
-                    </article>
-
-                </div>
-            </div>
-        </div>
-
-        <span id="cpu-bar" style="display:none"></span>
-        <span id="gpu-bar" style="display:none"></span>
-        <span id="memory-bar" style="display:none"></span>
-        <span id="disk-bar" style="display:none"></span>
-        <span id="disk-usage" style="display:none">0%</span>
-        <span id="cpu-temp" style="display:none">--°C</span>
-        <span id="gpu-temp" style="display:none">--°C</span>
-        <span id="cpu-temp-circle" style="display:none"></span>
-        <span id="gpu-temp-circle" style="display:none"></span>
-        <span id="net-up" style="display:none"></span>
-        <span id="net-down" style="display:none"></span>
-        <span id="sys-cpu" style="display:none"></span>
-        <span id="sys-cores" style="display:none"></span>
-        <span id="sys-ram" style="display:none"></span>
-        <span id="sys-platform" style="display:none"></span>
-        <span id="sys-hostname" style="display:none"></span>
-        <span id="sys-uptime" style="display:none"></span>
-    `;
+function getRestoreStatusRowMarkup(icon, label, detail, id) {
+    return `
+        <div class="restore-status-row">
+            <span class="home-icon">${getFreeHomeTweakIcon(icon)}</span>
+            <dt>${label}<small>${detail}</small></dt>
+            <dd><span class="xt-state-dot is-muted" id="${id}">Checking…</span></dd>
+        </div>`;
 }
 
 function getRestorePointPageMarkup() {
     return `
-        <section class="xt-restore-page">
-            <div class="xt-free-tweaks-header">
-                <span class="xt-free-tweaks-kicker">TOOLS</span>
-                <h1>Restore Point</h1>
-                <p>Create a Windows restore point before applying system changes.</p>
-            </div>
-            <div class="xt-restore-grid">
-                <article class="asset-card glass xt-free-card xt-restore-status-card">
-                    <div class="xt-tool-hub-card-top">
-                        <div class="xt-tweak-card-icon">${getFreeHomeTweakIcon('refresh')}</div>
-                        <span class="xt-tool-status-pill">SYSTEM SAFETY</span>
-                    </div>
-                    <div class="xt-tool-hub-card-body">
-                        <h3>Restore Status</h3>
-                        <p>Check admin access, system protection, and the latest restore point before making system changes.</p>
-                    </div>
-                    <div class="xt-restore-status-list">
-                        <div class="xt-restore-status-row"><span>Admin status</span><strong id="restore-admin-status">Checking…</strong></div>
-                        <div class="xt-restore-status-row"><span>System protection</span><strong id="restore-protection-status">Checking…</strong></div>
-                        <div class="xt-restore-status-row"><span>Latest restore point</span><strong id="restore-latest-status">Checking…</strong></div>
-                    </div>
-                    <div class="xt-restore-note" id="restore-status-note">Refreshing restore point status…</div>
-                </article>
-                <article class="asset-card glass xt-free-card xt-restore-action-card">
-                    <div class="xt-tool-hub-card-top">
-                        <div class="xt-tweak-card-icon">${getFreeHomeTweakIcon('shield')}</div>
-                        <span class="xt-tool-status-pill">MODIFY SETTINGS</span>
-                    </div>
-                    <div class="xt-tool-hub-card-body">
-                        <h3>Before you change Windows</h3>
-                        <p>XTweaks Free can request a manual restore point named <strong>XTweaks Free Restore Point</strong> through Windows System Restore.</p>
-                    </div>
-                    <div class="xt-restore-actions">
-                        ${getPremiumActionButtonMarkup('Create Restore Point', 'id="restore-create-btn"', '<path d="M12 5v14"/><path d="M5 12h14"/>')}
-                        ${getPremiumActionButtonMarkup('Refresh Status', 'id="restore-refresh-btn"', '<path d="M20 12a8 8 0 0 1-13.7 5.7"/><path d="M4 12A8 8 0 0 1 17.7 6.3"/><path d="M18 3v4h-4M6 21v-4h4"/>')}
-                        ${getPremiumActionButtonMarkup('Open Windows System Restore', 'id="restore-open-btn"', '<path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>')}
-                    </div>
-                    <div class="xt-restore-note" id="restore-action-note">Use Windows System Restore for rollback. XTweaks Free will never restore automatically.</div>
-                </article>
+        <section class="xt-page restore-page">
+            ${getPageHeaderMarkup({
+                eyebrow: 'Safety',
+                title: 'Restore &amp; Safety',
+                description: 'Create a Windows restore point before applying system-level changes. Rollback always happens in Windows System Restore.'
+            })}
+            <div class="xt-page-grid">
+                <div class="xt-page-main">
+                    <section class="xt-panel" aria-labelledby="restore-status-title">
+                        <div class="xt-panel-head">
+                            <div>
+                                <h2 id="restore-status-title">System status</h2>
+                                <p>Checked locally through Windows System Restore.</p>
+                            </div>
+                            <button class="home-button home-button-secondary home-button-compact" id="restore-refresh-btn" type="button">Refresh</button>
+                        </div>
+                        <dl class="restore-status-list">
+                            ${getRestoreStatusRowMarkup('shield', 'System protection', 'Restore configuration for the system drive', 'restore-protection-status')}
+                            ${getRestoreStatusRowMarkup('user', 'Administrator access', 'Required to create restore points', 'restore-admin-status')}
+                            ${getRestoreStatusRowMarkup('clock', 'Latest restore point', 'Most recent point Windows reports', 'restore-latest-status')}
+                        </dl>
+                        <p class="xt-panel-note" id="restore-status-note">Refreshing restore point status…</p>
+                    </section>
+                    <section class="xt-panel restore-action-panel" aria-labelledby="restore-action-title">
+                        <div class="restore-action-copy">
+                            <span class="home-icon home-premium-icon">${getFreeHomeTweakIcon('plus')}</span>
+                            <div>
+                                <h2 id="restore-action-title">Create a restore point</h2>
+                                <p>XTweaks Free asks Windows to create <strong>XTweaks Free Restore Point</strong>. Windows allows one new point every 24 hours.</p>
+                            </div>
+                        </div>
+                        <div class="restore-actions">
+                            <button class="home-button home-button-primary" id="restore-create-btn" type="button">${getFreeHomeTweakIcon('plus')}Create restore point</button>
+                            <button class="home-button home-button-secondary" id="restore-open-btn" type="button">${getFreeHomeTweakIcon('external')}Open Windows Restore</button>
+                        </div>
+                        <p class="xt-panel-note" id="restore-action-note">XTweaks Free never restores automatically.</p>
+                    </section>
+                </div>
+                <aside class="xt-page-aside">
+                    ${getSidePanelMarkup({
+                        icon: 'info',
+                        title: 'When to create one',
+                        state: 'Recommended',
+                        stateClass: 'is-admin',
+                        body: `
+                            <ul class="xt-check-list">
+                                <li>Before cleaning Administrator-level locations</li>
+                                <li>Before disabling startup entries</li>
+                                <li>Before any driver or system-level change</li>
+                            </ul>`
+                    })}
+                    ${getSidePanelMarkup({
+                        icon: 'refresh',
+                        title: 'Rolling back',
+                        body: `
+                            <p>Open Windows Restore, choose the XTweaks Free point, and follow the Windows prompts. Personal files are not affected; apps installed after the point may need reinstalling.</p>`
+                    })}
+                </aside>
             </div>
         </section>
     `;
 }
 
-function ensureRestoreNavItem() {
-    const sidebar = document.querySelector('.sidebar');
-    const settingsBtn = document.querySelector('.nav-item[data-page="settings"]');
-    if (!sidebar || document.querySelector('.nav-item[data-page="restore"]')) return;
-    const button = document.createElement('button');
-    button.className = 'nav-item';
-    button.dataset.page = 'restore';
-    button.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12a9 9 0 0 1 15.1-6.6"/>
-            <path d="M18 2v4h-4"/>
-            <path d="M21 12a9 9 0 0 1-15.1 6.6"/>
-            <path d="M6 22v-4h4"/>
-        </svg>
-        <span class="nav-text">Restore Point</span>
-    `;
-    if (settingsBtn) sidebar.insertBefore(button, settingsBtn);
-    else sidebar.appendChild(button);
-}
-
 function initializeRestorePointPage() {
-    ensureRestoreNavItem();
-    const pageBody = document.querySelector('.page-body');
-    if (!pageBody) return;
-    let page = document.getElementById('page-restore');
-    if (!page) {
-        page = document.createElement('div');
-        page.id = 'page-restore';
-        page.className = 'page';
-        const cleanupPage = document.getElementById('page-cleanup');
-        if (cleanupPage?.nextSibling) pageBody.insertBefore(page, cleanupPage.nextSibling);
-        else pageBody.appendChild(page);
-    }
+    const page = document.getElementById('page-restore');
+    if (!page) return;
     page.innerHTML = getRestorePointPageMarkup();
-    initializeRestorePointActions();
-}
 
-function initializeRestorePointActions() {
-    const setText = (id, value) => {
+    const createBtn = document.getElementById('restore-create-btn');
+    const refreshBtn = document.getElementById('restore-refresh-btn');
+    const openBtn = document.getElementById('restore-open-btn');
+    const statusIds = ['restore-protection-status', 'restore-admin-status', 'restore-latest-status'];
+
+    const setStatus = (id, value, tone = 'is-muted') => {
         const el = document.getElementById(id);
-        if (el) { el.textContent = value; el.title = value; }
+        if (!el) return;
+        el.textContent = value;
+        el.title = value;
+        el.className = `xt-state-dot ${tone}`;
     };
 
     const setNote = (value) => {
@@ -1079,42 +682,41 @@ function initializeRestorePointActions() {
 
     const formatRestoreDate = (isoStr) => {
         if (!isoStr) return null;
-        try {
-            const d = new Date(isoStr);
-            if (isNaN(d.getTime())) return null;
-            return d.toLocaleString('en-US', {
-                month: 'short', day: 'numeric', year: 'numeric',
-                hour: 'numeric', minute: '2-digit', hour12: true
-            });
-        } catch { return null; }
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return null;
+        return d.toLocaleString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric',
+            hour: 'numeric', minute: '2-digit', hour12: true
+        });
     };
 
+    if (!IS_WINDOWS_HOST) {
+        statusIds.forEach(id => setStatus(id, 'Windows only'));
+        setNote('Restore points are a Windows feature. Status is not available on this system.');
+        [createBtn, refreshBtn, openBtn].forEach(btn => { if (btn) btn.disabled = true; });
+        return;
+    }
+
     const refreshStatus = async () => {
-        const refreshBtn = document.getElementById('restore-refresh-btn');
-        const createBtn = document.getElementById('restore-create-btn');
-        setText('restore-admin-status', 'Checking…');
-        setText('restore-protection-status', 'Checking…');
-        setText('restore-latest-status', 'Checking…');
+        statusIds.forEach(id => setStatus(id, 'Checking…'));
         setNote('Refreshing restore point status…');
         if (refreshBtn) refreshBtn.disabled = true;
         if (createBtn) createBtn.disabled = true;
 
         try {
             const status = await window.electronAPI.getRestorePointStatus();
-            setText('restore-admin-status', status?.isAdmin ? 'Administrator' : 'Requires Admin');
-            setText('restore-protection-status', status?.protectionEnabled ? 'Enabled' : 'Disabled or unavailable');
-            let latestText = 'No restore point detected';
-            if (status?.latestRestorePoint?.description) {
-                const desc = status.latestRestorePoint.description;
-                const dateStr = formatRestoreDate(status.latestRestorePoint.createdAt);
-                latestText = dateStr ? `${desc} — ${dateStr}` : desc;
+            setStatus('restore-admin-status', status?.isAdmin ? 'Administrator' : 'Requires admin', status?.isAdmin ? 'is-safe' : 'is-review');
+            setStatus('restore-protection-status', status?.protectionEnabled ? 'Enabled' : 'Disabled or unavailable', status?.protectionEnabled ? 'is-safe' : 'is-review');
+            const latest = status?.latestRestorePoint;
+            if (latest?.description) {
+                const dateStr = formatRestoreDate(latest.createdAt);
+                setStatus('restore-latest-status', dateStr ? `${latest.description} — ${dateStr}` : latest.description, 'is-safe');
+            } else {
+                setStatus('restore-latest-status', 'None detected', 'is-review');
             }
-            setText('restore-latest-status', latestText);
             setNote(status?.message || 'Use Windows System Restore for rollback only.');
         } catch (error) {
-            setText('restore-admin-status', 'Unavailable');
-            setText('restore-protection-status', 'Unavailable');
-            setText('restore-latest-status', 'Unavailable');
+            statusIds.forEach(id => setStatus(id, 'Unavailable'));
             setNote(error?.message || 'Restore point status is unavailable right now.');
         } finally {
             if (refreshBtn) refreshBtn.disabled = false;
@@ -1122,15 +724,14 @@ function initializeRestorePointActions() {
         }
     };
 
-    document.getElementById('restore-refresh-btn')?.addEventListener('click', refreshStatus);
-    document.getElementById('restore-open-btn')?.addEventListener('click', async () => {
+    refreshBtn?.addEventListener('click', refreshStatus);
+    openBtn?.addEventListener('click', async () => {
         const result = await window.electronAPI.openWindowsSystemRestore();
         if (result?.success) showNotification('success', 'Windows Restore Opened', result.message || 'Windows System Restore opened.');
         else showNotification('error', 'Open Failed', result?.message || 'Windows System Restore could not be opened.');
     });
-    document.getElementById('restore-create-btn')?.addEventListener('click', async () => {
-        const btn = document.getElementById('restore-create-btn');
-        if (btn) btn.disabled = true;
+    createBtn?.addEventListener('click', async () => {
+        createBtn.disabled = true;
         try {
             const result = await window.electronAPI.createRestorePoint();
             if (result?.success) {
@@ -1144,120 +745,12 @@ function initializeRestorePointActions() {
             showNotification('error', 'Restore Point Failed', error?.message || 'Restore point could not be created.');
             setNote(error?.message || 'Restore point could not be created.');
         } finally {
-            if (btn) btn.disabled = false;
+            createBtn.disabled = false;
             refreshStatus();
         }
     });
 
     refreshStatus();
-}
-
-function initializeFreeDashboardBackground() {
-    const page = document.getElementById('page-dashboard');
-    const canvas = document.getElementById('xt-reactive-bg');
-    const ctx = canvas?.getContext?.('2d', { alpha: true });
-    if (!page || !canvas || !ctx) return;
-
-    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    const state = {
-        width: 0,
-        height: 0,
-        pointerX: 0.58,
-        pointerY: 0.22,
-        targetX: 0.58,
-        targetY: 0.22,
-        frame: 0,
-        running: false
-    };
-
-    const resize = () => {
-        const rect = page.getBoundingClientRect();
-        const width = Math.max(1, Math.round(rect.width * 0.5));
-        const height = Math.max(1, Math.round(rect.height * 0.5));
-        state.width = width;
-        state.height = height;
-        canvas.width = width;
-        canvas.height = height;
-    };
-
-    const drawBlob = (x, y, radius, alpha) => {
-        const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-        gradient.addColorStop(0, `rgba(255,255,255,${alpha})`);
-        gradient.addColorStop(0.34, `rgba(210,214,218,${alpha * 0.36})`);
-        gradient.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
-    };
-
-    const draw = (time = 0) => {
-        const { width, height } = state;
-        if (!width || !height) return;
-
-        state.pointerX += (state.targetX - state.pointerX) * 0.035;
-        state.pointerY += (state.targetY - state.pointerY) * 0.035;
-
-        ctx.clearRect(0, 0, width, height);
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.fillStyle = 'rgba(0,0,0,0)';
-        ctx.fillRect(0, 0, width, height);
-        ctx.globalCompositeOperation = 'screen';
-
-        const t = time * 0.00012;
-        const px = state.pointerX - 0.5;
-        const py = state.pointerY - 0.5;
-
-        drawBlob(width * (0.72 + px * 0.08 + Math.sin(t * 1.7) * 0.025), height * (0.12 + py * 0.08 + Math.cos(t) * 0.025), Math.min(width, height) * 0.42, 0.125);
-        drawBlob(width * (0.28 + px * 0.05 + Math.cos(t * 1.2) * 0.022), height * (0.68 + py * 0.06 + Math.sin(t * 1.4) * 0.025), Math.min(width, height) * 0.34, 0.075);
-        drawBlob(width * (0.52 + px * 0.06), height * (0.42 + py * 0.06), Math.min(width, height) * 0.28, 0.055);
-
-        ctx.globalCompositeOperation = 'source-over';
-    };
-
-    const tick = (time) => {
-        if (!state.running) return;
-        draw(time);
-        if (!document.hidden && !reduceMotion?.matches) {
-            state.frame = requestAnimationFrame(tick);
-        }
-    };
-
-    const start = () => {
-        cancelAnimationFrame(state.frame);
-        state.running = true;
-        if (reduceMotion?.matches || document.hidden) {
-            draw(0);
-            return;
-        }
-        state.frame = requestAnimationFrame(tick);
-    };
-
-    const stop = () => {
-        state.running = false;
-        cancelAnimationFrame(state.frame);
-    };
-
-    const updatePointer = (event) => {
-        const rect = page.getBoundingClientRect();
-        if (!rect.width || !rect.height) return;
-        state.targetX = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
-        state.targetY = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
-    };
-
-    window.addEventListener('resize', () => {
-        resize();
-        draw(0);
-    });
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) stop();
-        else start();
-    });
-    reduceMotion?.addEventListener?.('change', start);
-    page.addEventListener('pointermove', updatePointer, { passive: true });
-
-    resize();
-    start();
 }
 
 function initializeExternalLinks() {
@@ -1373,6 +866,8 @@ function initializeNavigation() {
             activeItem = document.querySelector('[data-page="dashboard"]');
         }
         
+        // Callers like the top-bar gear pass only a page name; keep the rail in sync.
+        activeItem ||= document.querySelector(`.nav-item[data-page="${targetPage}"]`);
         navItems.forEach(nav => nav.classList.remove('active'));
         if (activeItem) activeItem.classList.add('active');
 
@@ -1501,6 +996,14 @@ function initializeSettingsPage() {
     if (page.dataset.settingsInitialized === 'true') return;
     page.dataset.settingsInitialized = 'true';
 
+    page.querySelectorAll('[data-premium-teaser]').forEach((slot) => {
+        slot.outerHTML = getPremiumTeaserMarkup();
+    });
+    // Electron's default user agent carries "<app name>/<app version>".
+    const appVersion = navigator.userAgent.match(/[\w-]+\/(\d+\.\d+\.\d+) Chrome\//)?.[1];
+    const versionEl = document.getElementById('settings-app-version');
+    if (versionEl) versionEl.textContent = appVersion ? `v${appVersion}` : 'Unavailable';
+
     const storageKey = 'xtweaks-settings-v1';
     const settingsVersion = 3;
     const defaults = {
@@ -1522,10 +1025,15 @@ function initializeSettingsPage() {
         full: 'Full Sidebar',
         compact: 'Compact Rail'
     };
+    const accentLabels = {
+        pearl: 'Pearl',
+        graphite: 'Graphite',
+        chrome: 'Chrome'
+    };
     const validOptions = {
         language: ['English'],
         theme: Object.keys(themeLabels),
-        accentFinish: ['pearl', 'graphite', 'chrome'],
+        accentFinish: Object.keys(accentLabels),
         navigationStyle: Object.keys(navigationLabels)
     };
 
@@ -1597,19 +1105,22 @@ function initializeSettingsPage() {
     }
 
     function applyNavigationStyle(navigationStyle) {
-        document.body.classList.toggle('settings-nav-compact', navigationStyle === 'compact');
-        document.body.classList.toggle('settings-nav-hidden', navigationStyle === 'hidden');
-        document.body.classList.toggle('settings-nav-full', navigationStyle === 'full');
-        document.querySelector('[data-sidebar-layout-toggle]')?.setAttribute('aria-pressed', String(navigationStyle === 'compact'));
+        const isCompact = navigationStyle === 'compact';
+        document.body.classList.toggle('settings-nav-compact', isCompact);
+        document.body.classList.toggle('settings-nav-full', !isCompact);
+        document.querySelector('[data-sidebar-layout-toggle]')?.setAttribute('aria-pressed', String(isCompact));
     }
 
     function updateStatusChips() {
-        const themeStatus = page.querySelector('[data-settings-status="theme"]');
-        const startupStatus = page.querySelector('[data-settings-status="startup"]');
-        const navigationStatus = page.querySelector('[data-settings-status="navigation"]');
-        if (themeStatus) themeStatus.textContent = themeLabels[settings.theme] || themeLabels[defaults.theme];
-        if (startupStatus) startupStatus.textContent = settings.launchOnStartup ? 'Enabled' : 'Off';
-        if (navigationStatus) navigationStatus.textContent = navigationLabels[settings.navigationStyle] || navigationLabels[defaults.navigationStyle];
+        const labels = {
+            theme: themeLabels[settings.theme] || themeLabels[defaults.theme],
+            accent: accentLabels[settings.accentFinish] || accentLabels[defaults.accentFinish],
+            startup: settings.launchOnStartup ? 'Enabled' : 'Off',
+            navigation: navigationLabels[settings.navigationStyle] || navigationLabels[defaults.navigationStyle]
+        };
+        page.querySelectorAll('[data-settings-status]').forEach((el) => {
+            el.textContent = labels[el.dataset.settingsStatus] ?? el.textContent;
+        });
     }
 
     function applySettingsToUI() {
@@ -2908,105 +2419,110 @@ function initializeTweaks() {
     });
 }
 
-function getCleanupPageMarkup() {
-    const cards = CLEANUP_PAGE_CARDS.map((card) => `
-        <article class="xt-cleanup-card-shell" data-cleanup-card="${card.id}">
-            <div class="xt-cleanup-card-top">
-                <div class="xt-cleanup-card-icon">${getFreeHomeTweakIcon(card.icon)}</div>
-                <label class="xt-tweak-include xt-cleanup-include" title="Include in queue">
-                    <input type="checkbox" data-cleanup-include="${card.id}" checked>
+function getCleanupToolMarkup(card) {
+    const category = card.requiresAdmin ? 'admin' : 'safe';
+    return `
+        <article class="home-tool-card cleanup-tool" data-cleanup-card="${card.id}" data-cleanup-category="${category}" data-state="idle">
+            <div class="home-tool-card-top">
+                <span class="home-icon">${getFreeHomeTweakIcon(card.icon)}</span>
+                <label class="xt-tweak-include" title="Include ${card.title} in selected cleanup">
+                    <input type="checkbox" data-cleanup-include="${card.id}" aria-label="Include ${card.title}" checked>
                     <span aria-hidden="true"></span>
                 </label>
             </div>
-            <div class="xt-cleanup-card-body">
+            <div class="home-tool-copy">
                 <h3>${card.title}</h3>
                 <p>${card.description}</p>
             </div>
-            <div class="xt-cleanup-card-meta">
-                <span class="xt-tweak-status-pill ${card.requiresAdmin ? 'requires-admin' : 'is-ready'}" data-cleanup-status-chip="${card.id}">
-                    <span></span>${card.requiresAdmin ? 'Requires Admin' : 'Ready'}
-                </span>
-                <strong class="xt-cleanup-size" data-cleanup-size="${card.id}">--</strong>
+            <div class="cleanup-tool-scan">
+                <span class="cleanup-tool-state" data-cleanup-status="${card.id}" data-state="idle">Waiting to scan</span>
+                <strong data-cleanup-size="${card.id}">--</strong>
             </div>
-            <div class="xt-cleanup-card-footer">
-                <span class="xt-cleanup-state" data-cleanup-status="${card.id}" data-state="idle">Waiting to scan</span>
-                ${getPremiumActionButtonMarkup('Run', `data-cleanup-run="${card.id}" data-cleanup-action="${card.id}"`, '<path d="M8 6.5v11l9-5.5z" fill="currentColor" stroke="none"/>')}
+            <p class="cleanup-tool-result" data-cleanup-result="${card.id}"></p>
+            <div class="home-tool-card-footer">
+                <span class="xt-state-dot ${card.requiresAdmin ? 'is-review' : 'is-safe'}">${card.requiresAdmin ? 'Admin' : 'Safe'}</span>
+                <button class="home-button home-button-secondary home-button-compact" type="button" data-cleanup-run="${card.id}" data-cleanup-action="${card.id}">Run</button>
             </div>
-            <div class="xt-tweak-result xt-cleanup-result" data-cleanup-result="${card.id}">Missing folders are treated as already clean. PatchCache remains excluded.</div>
-        </article>
-    `).join('');
+        </article>`;
+}
 
+function getCleanupPageMarkup() {
+    const adminTotal = CLEANUP_PAGE_CARDS.filter(card => card.requiresAdmin).length;
     return `
-        <section class="xt-cleanup-page">
-            <div class="xt-cleanup-layout">
-                <section class="xt-cleanup-hero">
-                    <div class="xt-cleanup-hero-copy">
-                        <span class="xt-free-tweaks-kicker">SAFE CLEANUP</span>
-                        <h1>Cleanup</h1>
-                        <p>Scan safe cache and temporary files before deleting anything. Every cleanup action stays inside the allowlist and keeps PatchCache excluded.</p>
-                        <div class="xt-cleanup-hero-actions">
-                            ${getPremiumActionButtonMarkup('Scan Safe Locations', 'id="cleanup-scan-btn"', '<path d="M11 4a7 7 0 1 0 7 7"/><path d="M20 4v6h-6"/><circle cx="11" cy="11" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/>')}
-                            ${getPremiumActionButtonMarkup('Clean Selected', 'id="cleanup-selected-btn"', '<path d="M7 7h10"/><path d="M9 7V5h6v2"/><path d="M18 7l-1 11H7L6 7"/><path d="m10 12 2 2 4-4"/>')}
-                        </div>
-                    </div>
-                    <div class="xt-cleanup-hero-stats">
-                        <div class="xt-cleanup-summary-metrics">
-                            <div class="xt-cleanup-summary-metric">
-                                <span>Selected</span>
-                                <strong id="cleanup-selected-count">0 / ${CLEANUP_PAGE_CARDS.length}</strong>
-                            </div>
-                            <div class="xt-cleanup-summary-metric">
-                                <span>Ready</span>
-                                <strong id="cleanup-ready-count">0</strong>
-                            </div>
-                            <div class="xt-cleanup-summary-metric">
-                                <span>Admin</span>
-                                <strong id="cleanup-admin-count">0</strong>
-                            </div>
-                            <div class="xt-cleanup-summary-metric">
-                                <span>Cleaned</span>
-                                <strong id="cleanup-completed-count">0</strong>
-                            </div>
-                        </div>
-                        <div class="xt-cleanup-summary-pills">
-                            <span class="xt-tool-status-pill"><span></span>Safe allowlist only</span>
-                            <span class="xt-tool-status-pill requires-admin"><span></span>PatchCache excluded</span>
-                        </div>
-                        <div class="xt-cleanup-summary-note" id="cleanup-summary-note">Run a scan to populate the queue.</div>
-                        <div class="xt-cleanup-recent" id="cleanup-last-result">No cleanup actions have run in this session.</div>
-                    </div>
-                </section>
+        <section class="xt-page cleanup-page">
+            ${getPageHeaderMarkup({
+                eyebrow: 'Maintenance · Safe allowlist',
+                title: 'Cleanup',
+                description: 'Scan cache and temporary locations, review what was found, then clean only what you select. Every action stays inside the allowlist and PatchCache is always excluded.',
+                aside: getStatStripMarkup([
+                    { label: 'Selected', id: 'cleanup-selected-count', value: `0 / ${CLEANUP_PAGE_CARDS.length}` },
+                    { label: 'With findings', id: 'cleanup-ready-count', value: '0' },
+                    { label: 'Admin', id: 'cleanup-admin-count', value: '0' },
+                    { label: 'Cleaned', id: 'cleanup-completed-count', value: '0' }
+                ])
+            })}
 
-                <section class="xt-cleanup-grid-shell">
-                    <div class="xt-cleanup-grid-head">
-                        <div>
-                            <h2>Cleanup Targets</h2>
-                            <p>Safe cache, logs, and temp folders that can be scanned or cleaned individually.</p>
-                        </div>
+            <div class="xt-toolbar">
+                <div class="xt-toolbar-group">
+                    <button class="home-button home-button-primary" id="cleanup-selected-btn" type="button">${getFreeHomeTweakIcon('play')}Run selected cleanup</button>
+                    <button class="home-button home-button-secondary" id="cleanup-scan-btn" type="button">${getFreeHomeTweakIcon('scan')}Scan locations</button>
+                </div>
+                <div class="xt-toolbar-group">
+                    <button class="home-filter" type="button" data-cleanup-select="all">Select all</button>
+                    <button class="home-filter" type="button" data-cleanup-select="none">Clear</button>
+                    <span class="xt-toolbar-divider" aria-hidden="true"></span>
+                    <div class="home-filters" aria-label="Filter cleanup tools">
+                        <button class="home-filter is-active" type="button" data-cleanup-filter="all">All</button>
+                        <button class="home-filter" type="button" data-cleanup-filter="safe">Safe · ${CLEANUP_PAGE_CARDS.length - adminTotal}</button>
+                        <button class="home-filter" type="button" data-cleanup-filter="admin">Admin · ${adminTotal}</button>
                     </div>
-                    <div class="xt-cleanup-grid">
-                        ${cards}
-                    </div>
-                </section>
+                </div>
+            </div>
+
+            <div class="xt-page-grid">
+                <div class="cleanup-tool-grid">
+                    ${CLEANUP_PAGE_CARDS.map(getCleanupToolMarkup).join('')}
+                </div>
+                <aside class="xt-page-aside">
+                    ${getSidePanelMarkup({
+                        icon: 'wand',
+                        title: 'Selected queue',
+                        state: IS_WINDOWS_HOST ? 'Local' : 'Windows only',
+                        stateClass: IS_WINDOWS_HOST ? '' : 'is-muted',
+                        body: `
+                            <p id="cleanup-summary-note">Run a scan to measure the selected queue.</p>
+                            <div class="home-safety-list"><span>Last action <strong id="cleanup-last-result">None this session</strong></span></div>`
+                    })}
+                    ${getSidePanelMarkup({
+                        icon: 'shield',
+                        title: 'Restore point',
+                        state: 'Recommended',
+                        stateClass: 'is-admin',
+                        body: `
+                            <p>Admin locations touch Windows folders. Create a restore point first if you plan to run them.</p>
+                            <button class="home-text-button" type="button" data-home-page="restore">Open restore tools</button>`
+                    })}
+                    ${getPremiumTeaserMarkup()}
+                </aside>
             </div>
 
             <div class="xt-tweak-modal cleanup-confirm-modal" id="cleanup-confirm-modal" hidden>
                 <div class="xt-tweak-modal-backdrop" data-cleanup-cancel></div>
-                <div class="xt-tweak-modal-card">
+                <div class="xt-tweak-modal-card" role="dialog" aria-modal="true" aria-labelledby="cleanup-confirm-title">
                     <div class="xt-tweak-modal-head">
                         <div>
-                            <span class="xt-free-tweaks-kicker">CONFIRM CLEANUP</span>
-                            <h3>Review selected cleanup actions</h3>
+                            <p class="home-eyebrow">Confirm cleanup</p>
+                            <h3 id="cleanup-confirm-title">Review selected cleanup actions</h3>
                         </div>
-                        <button class="xt-tweak-modal-close" type="button" data-cleanup-cancel aria-label="Close confirmation">x</button>
+                        <button class="xt-tweak-modal-close" type="button" data-cleanup-cancel aria-label="Close confirmation">×</button>
                     </div>
                     <div class="xt-tweak-modal-body">
-                        <p>This queue only includes the safe cleanup allowlist. PatchCache is excluded, and missing folders will be treated as already clean.</p>
-                        <div class="xt-cleanup-confirm-list" id="cleanup-confirm-list"></div>
+                        <p>Only safe allowlist locations are included. PatchCache is excluded, and missing folders are treated as already clean.</p>
+                        <div class="cleanup-confirm-list" id="cleanup-confirm-list"></div>
                     </div>
                     <div class="xt-tweak-modal-actions">
-                        <button class="xt-tweak-modal-btn xt-tweak-modal-btn-secondary" type="button" data-cleanup-cancel>Cancel</button>
-                        ${getPremiumActionButtonMarkup('Run Cleanup', 'data-cleanup-confirm', '<path d="M7 7h10"/><path d="M9 7V5h6v2"/><path d="M18 7l-1 11H7L6 7"/><path d="m10 12 2 2 4-4"/>')}
+                        <button class="home-button home-button-secondary" type="button" data-cleanup-cancel>Cancel</button>
+                        <button class="home-button home-button-primary" type="button" data-cleanup-confirm>Run cleanup</button>
                     </div>
                 </div>
             </div>
@@ -3015,15 +2531,9 @@ function getCleanupPageMarkup() {
 }
 
 function initializeCleanupDashboard() {
-    console.log('[cleanup] init started');
     const page = document.getElementById('page-cleanup');
-    if (!page) {
-        console.log('[cleanup] error: #page-cleanup not found');
-        return;
-    }
-
+    if (!page) return;
     page.innerHTML = getCleanupPageMarkup();
-    console.log('[cleanup] found buttons:', page.querySelectorAll('[data-cleanup-action]').length);
 
     const scanBtn = document.getElementById('cleanup-scan-btn');
     const selectedBtn = document.getElementById('cleanup-selected-btn');
@@ -3036,33 +2546,38 @@ function initializeCleanupDashboard() {
     const readyCountEl = document.getElementById('cleanup-ready-count');
     const adminCountEl = document.getElementById('cleanup-admin-count');
     const completedCountEl = document.getElementById('cleanup-completed-count');
+    const cardById = new Map(CLEANUP_PAGE_CARDS.map(card => [card.id, card]));
 
     let scanResults = {};
     let selectedIdsForConfirm = [];
     let completedRuns = 0;
     let isBusy = false;
 
-    const getCard = (id) => document.querySelector(`[data-cleanup-card="${id}"]`);
-    const getSelectedIds = () => CLEANUP_PAGE_CARDS
-        .filter((card) => document.querySelector(`[data-cleanup-include="${card.id}"]`)?.checked)
-        .map((card) => card.id);
-    const getCardTitle = (id) => CLEANUP_PAGE_CARDS.find((card) => card.id === id)?.title || id;
+    const getCard = (id) => page.querySelector(`[data-cleanup-card="${id}"]`);
+    const getIncludeInputs = () => Array.from(page.querySelectorAll('[data-cleanup-include]'));
+    const getSelectedIds = () => getIncludeInputs().filter(input => input.checked).map(input => input.dataset.cleanupInclude);
+    const getCardTitle = (id) => cardById.get(id)?.title || id;
     const hasFindings = (entry) => Number(entry?.bytes || 0) > 0 || Number(entry?.count || 0) > 0;
+    const setLastResult = (text) => {
+        if (!lastResult) return;
+        lastResult.textContent = text;
+        lastResult.title = text;
+    };
 
     function updateSummary() {
         const selectedIds = getSelectedIds();
         const readyCount = selectedIds.filter((id) => hasFindings(scanResults[id])).length;
-        const adminCount = selectedIds.filter((id) => CLEANUP_PAGE_CARDS.find((card) => card.id === id)?.requiresAdmin).length;
+        const adminCount = selectedIds.filter((id) => cardById.get(id)?.requiresAdmin).length;
         const totalBytes = selectedIds.reduce((sum, id) => sum + (Number(scanResults[id]?.bytes) || 0), 0);
 
         if (selectedCountEl) selectedCountEl.textContent = `${selectedIds.length} / ${CLEANUP_PAGE_CARDS.length}`;
         if (readyCountEl) readyCountEl.textContent = String(readyCount);
         if (adminCountEl) adminCountEl.textContent = String(adminCount);
         if (completedCountEl) completedCountEl.textContent = String(completedRuns);
-        if (summaryNote) {
+        if (summaryNote && IS_WINDOWS_HOST && Object.keys(scanResults).length) {
             summaryNote.textContent = totalBytes > 0
-                ? `${formatBytesCompact(totalBytes)} currently available across the selected queue.`
-                : 'Selected items are scanned and ready for review.';
+                ? `${formatBytesCompact(totalBytes)} available across ${selectedIds.length} selected location${selectedIds.length === 1 ? '' : 's'}.`
+                : 'Nothing to clean in the selected locations.';
         }
     }
 
@@ -3079,27 +2594,28 @@ function initializeCleanupDashboard() {
             statusEl.textContent = statusText;
             statusEl.dataset.state = state;
         }
-        if (resultEl) resultEl.textContent = resultText;
+        if (resultEl) {
+            resultEl.textContent = resultText;
+            resultEl.title = resultText;
+        }
         if (sizeEl && bytesText !== null) sizeEl.textContent = bytesText;
-        if (runBtn) runBtn.disabled = isBusy || state === 'scanning';
+        if (runBtn) runBtn.disabled = isBusy || state === 'scanning' || state === 'unavailable';
     }
 
     function applyScanResults(results) {
         scanResults = results || {};
         CLEANUP_PAGE_CARDS.forEach((card) => {
             const entry = scanResults[card.id] || {};
-            const bytes = Number(entry.bytes || 0);
             const count = Number(entry.count || 0);
             const findings = hasFindings(entry);
-            const sizeLabel = bytes > 0 ? formatBytesCompact(bytes) : '0 B';
             const summary = findings
-                ? `${count > 0 ? `${count} item${count === 1 ? '' : 's'}` : 'Files'} detected in the safe allowlist.`
+                ? `${count > 0 ? `${count} item${count === 1 ? '' : 's'}` : 'Files'} found in the safe allowlist.`
                 : 'Nothing was found in the safe allowlist.';
             setCardVisual(
                 card.id,
                 findings ? 'Ready to clean' : 'Already clean',
                 summary,
-                sizeLabel,
+                Number(entry.bytes || 0) > 0 ? formatBytesCompact(entry.bytes) : '0 B',
                 findings ? 'ready' : 'clean'
             );
         });
@@ -3110,9 +2626,8 @@ function initializeCleanupDashboard() {
         isBusy = nextBusy;
         if (scanBtn) scanBtn.disabled = nextBusy;
         if (selectedBtn) selectedBtn.disabled = nextBusy;
-        document.querySelectorAll('[data-cleanup-run]').forEach((button) => {
-            const id = button.dataset.cleanupRun;
-            button.disabled = nextBusy || getCard(id)?.dataset.state === 'scanning';
+        page.querySelectorAll('[data-cleanup-run]').forEach((button) => {
+            button.disabled = nextBusy || getCard(button.dataset.cleanupRun)?.dataset.state === 'scanning';
         });
     }
 
@@ -3126,46 +2641,38 @@ function initializeCleanupDashboard() {
         if (!confirmModal || !confirmList || !ids.length) return;
         selectedIdsForConfirm = ids.slice();
         confirmList.innerHTML = ids.map((id) => {
-            const card = CLEANUP_PAGE_CARDS.find((entry) => entry.id === id);
-            const scan = scanResults[id] || {};
-            const sizeLabel = Number(scan.bytes || 0) > 0 ? formatBytesCompact(scan.bytes) : '0 B';
+            const card = cardById.get(id);
+            const bytes = Number(scanResults[id]?.bytes || 0);
             return `
-                <div class="xt-cleanup-confirm-row">
+                <div class="cleanup-confirm-row">
                     <div>
                         <strong>${card?.title || id}</strong>
                         <span>${card?.requiresAdmin ? 'Requires Windows admin access when applicable.' : 'Safe standard cleanup target.'}</span>
                     </div>
-                    <em>${sizeLabel}</em>
+                    <em>${bytes > 0 ? formatBytesCompact(bytes) : '0 B'}</em>
                 </div>
             `;
         }).join('');
         confirmModal.hidden = false;
+        confirmBtn?.focus();
     }
 
     async function scanCleanup() {
         if (!window.electronAPI?.scanCleanup) {
-            console.log('[cleanup] error: preload scanCleanup API not available');
             showNotification('error', 'Cleanup Unavailable', 'Cleanup API is not available in this environment.');
             return;
         }
-        if (isBusy) {
-            console.log('[cleanup] scanCleanup skipped: already busy');
-            return;
-        }
-        console.log('[cleanup] calling preload API (scanCleanup)');
+        if (isBusy) return;
         setBusy(true);
         CLEANUP_PAGE_CARDS.forEach((card) => {
-            setCardVisual(card.id, 'Scanning...', 'Inspecting safe cleanup locations now.', '--', 'scanning');
+            setCardVisual(card.id, 'Scanning…', 'Inspecting safe cleanup locations.', '--', 'scanning');
         });
-        if (summaryNote) summaryNote.textContent = 'Scanning safe cleanup locations...';
+        if (summaryNote) summaryNote.textContent = 'Scanning safe cleanup locations…';
 
         try {
-            const results = await window.electronAPI.scanCleanup();
-            console.log('[cleanup] result: scan returned', Object.keys(results || {}).length, 'entries');
-            applyScanResults(results);
-            if (lastResult) lastResult.textContent = 'Latest action: scan complete. Review the queue before cleaning.';
+            applyScanResults(await window.electronAPI.scanCleanup());
+            setLastResult('Scan complete');
         } catch (error) {
-            console.log('[cleanup] error:', error);
             CLEANUP_PAGE_CARDS.forEach((card) => {
                 setCardVisual(card.id, 'Scan failed', 'Unable to inspect this location right now.', '--', 'error');
             });
@@ -3197,29 +2704,26 @@ function initializeCleanupDashboard() {
 
         for (const id of ids) {
             const title = getCardTitle(id);
-            setCardVisual(id, 'Cleaning...', 'Running the cleanup task now.', null, 'running');
+            setCardVisual(id, 'Cleaning…', 'Running the cleanup task now.', null, 'running');
             try {
-                console.log('[cleanup] calling preload API (runCleanup):', id);
                 const result = await window.electronAPI.runCleanup(id);
-                console.log('[cleanup] action result:', id, result);
                 if (result?.success) {
                     completedRuns += 1;
                     setCardVisual(id, 'Completed', result.message || 'Cleanup finished successfully.', '0 B', 'clean');
-                    if (lastResult) lastResult.textContent = `${title}: ${result.message || 'Cleanup finished successfully.'}`;
+                    setLastResult(`${title} cleaned`);
                     showNotification('success', 'Cleanup Complete', result.message || `${title} cleaned successfully.`);
                 } else if (result?.requiresAdmin) {
-                    setCardVisual(id, 'Requires Admin', result.message || 'Requires Administrator to clean this location.', null, 'error');
-                    if (lastResult) lastResult.textContent = `${title}: ${result.message || 'Requires Administrator.'}`;
+                    setCardVisual(id, 'Requires admin', result.message || 'Requires Administrator to clean this location.', null, 'error');
+                    setLastResult(`${title}: requires admin`);
                     showNotification('error', 'Admin Required', result.message || `${title} requires Administrator access. Relaunch XTweaks Free as Administrator.`);
                 } else {
                     setCardVisual(id, 'Not completed', result?.message || 'This cleanup target could not be completed.', null, 'error');
-                    if (lastResult) lastResult.textContent = `${title}: ${result?.message || 'Cleanup did not complete.'}`;
+                    setLastResult(`${title}: not completed`);
                     showNotification('error', 'Cleanup Not Completed', result?.message || `${title} could not be cleaned.`);
                 }
             } catch (error) {
-                console.log('[cleanup] action error:', id, error);
                 setCardVisual(id, 'Error', error.message || 'Unexpected cleanup error.', null, 'error');
-                if (lastResult) lastResult.textContent = `${title}: ${error.message || 'Unexpected cleanup error.'}`;
+                setLastResult(`${title}: error`);
                 showNotification('error', 'Cleanup Error', error.message || `${title} failed to clean.`);
             }
         }
@@ -3229,63 +2733,45 @@ function initializeCleanupDashboard() {
         await scanCleanup();
     }
 
-    scanBtn?.addEventListener('click', () => {
-        scanCleanup();
-    });
-
-    selectedBtn?.addEventListener('click', async () => {
-        const ids = getSelectedIds();
+    async function requestCleanup(ids) {
         if (!ids.length) {
             showNotification('info', 'No Cleanup Selected', 'Choose at least one cleanup target first.');
             return;
         }
         if (isBusy) {
-            showNotification('info', 'Scan In Progress', 'Please wait for the scan to finish, then try again.');
+            showNotification('info', 'Scan In Progress', 'Please wait for the current scan to finish, then try again.');
             return;
         }
-        const ready = await ensureScanReady();
-        if (!ready) {
-            showNotification('info', 'Scan Required', 'Could not prepare scan results. Click "Scan Safe Locations" first.');
+        if (!(await ensureScanReady())) {
+            showNotification('info', 'Scan Required', 'Could not prepare scan results. Click "Scan locations" first.');
             return;
         }
         openConfirm(ids);
-    });
+    }
 
-    page.addEventListener('click', async (e) => {
-        const button = e.target.closest('[data-cleanup-action]');
-        if (!button) return;
-        const id = button.dataset.cleanupAction;
-        console.log('[cleanup] clicked:', id);
-        button.disabled = true;
-        try {
-            if (!window.electronAPI?.scanCleanup) {
-                console.log('[cleanup] error: preload API not available');
-                showNotification('error', 'Cleanup Unavailable', 'Cleanup API is not available in this environment.');
-                return;
-            }
-            if (isBusy) {
-                console.log('[cleanup] busy: scan in progress');
-                showNotification('info', 'Scan In Progress', 'Please wait for the current scan to complete, then click Run again.');
-                return;
-            }
-            console.log('[cleanup] calling preload API (ensureScanReady)');
-            const ready = await ensureScanReady();
-            console.log('[cleanup] ensureScanReady result:', ready);
-            if (!ready) {
-                showNotification('info', 'Scan Required', 'Please click "Scan Safe Locations" before running individual cleanup actions.');
-                return;
-            }
-            openConfirm([id]);
-        } catch (err) {
-            console.log('[cleanup] error:', err);
-            showNotification('error', 'Cleanup Error', err.message || 'An unexpected error occurred.');
-        } finally {
-            button.disabled = isBusy;
+    function applyFilter(filter) {
+        page.querySelectorAll('[data-cleanup-filter]').forEach((button) => {
+            button.classList.toggle('is-active', button.dataset.cleanupFilter === filter);
+        });
+        page.querySelectorAll('[data-cleanup-card]').forEach((card) => {
+            card.hidden = filter !== 'all' && card.dataset.cleanupCategory !== filter;
+        });
+    }
+
+    page.addEventListener('click', (event) => {
+        const run = event.target.closest('[data-cleanup-action]');
+        const filter = event.target.closest('[data-cleanup-filter]');
+        const select = event.target.closest('[data-cleanup-select]');
+        if (run) requestCleanup([run.dataset.cleanupAction]);
+        if (filter) applyFilter(filter.dataset.cleanupFilter);
+        if (select) {
+            const checked = select.dataset.cleanupSelect === 'all';
+            getIncludeInputs().forEach((input) => { input.checked = checked; });
+            updateSummary();
         }
     });
-
-    document.querySelectorAll('[data-cleanup-include]').forEach((input) => {
-        input.addEventListener('change', updateSummary);
+    page.addEventListener('change', (event) => {
+        if (event.target.matches('[data-cleanup-include]')) updateSummary();
     });
 
     confirmBtn?.addEventListener('click', async () => {
@@ -3293,207 +2779,55 @@ function initializeCleanupDashboard() {
         closeConfirm();
         await runCleanupIds(ids);
     });
-
     confirmModal?.querySelectorAll('[data-cleanup-cancel]').forEach((button) => {
         button.addEventListener('click', closeConfirm);
     });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && confirmModal && !confirmModal.hidden) closeConfirm();
+    });
+
+    updateSummary();
+
+    if (!IS_WINDOWS_HOST) {
+        CLEANUP_PAGE_CARDS.forEach((card) => {
+            setCardVisual(card.id, 'Windows only', 'This location exists on Windows only.', '--', 'unavailable');
+        });
+        [scanBtn, selectedBtn].forEach((button) => { if (button) button.disabled = true; });
+        if (summaryNote) summaryNote.textContent = 'Cleanup targets are Windows folders. Nothing is scanned on this system.';
+        return;
+    }
+
+    scanBtn?.addEventListener('click', scanCleanup);
+    selectedBtn?.addEventListener('click', () => requestCleanup(getSelectedIds()));
 }
 
-function initializeCleanup() {
-    const STEPS = ['scan', 'review', 'clean', 'verify'];
+let dashboardMetricsSupported = null;
 
-    // ── Pipeline state ───────────────────────────────────────────
-    function setPipelineStep(activeStep) {
-        document.querySelectorAll('#page-cleanup .cu-pipe-step').forEach(el => {
-            const step = el.dataset.step;
-            el.classList.toggle('cu-pipe-active', step === activeStep);
-        });
-    }
-    // Initially no step active
-    setPipelineStep(null);
-
-    // ── Helpers ──────────────────────────────────────────────────
-    function fmtBytes(b) {
-        if (!b || b <= 0) return null;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), 3);
-        return parseFloat((b / Math.pow(1024, i)).toFixed(1)) + ' ' + sizes[i];
-    }
-
-    function scanLabel(type, data) {
-        if (!data) return 'Unable to inspect';
-        switch (type) {
-            case 'temp': {
-                const s = fmtBytes(data.bytes);
-                if (s) return `${s} found`;
-                return data.count > 0 ? `${data.count} files found` : 'Nothing to clean';
-            }
-            case 'dns':
-                return data.entries > 0 ? `${data.entries} entries cached` : 'Cache empty';
-            case 'recycle': {
-                const s = fmtBytes(data.bytes);
-                if (s) return `${s} in Bin`;
-                return data.count > 0 ? `${data.count} items found` : 'Bin is empty';
-            }
-            case 'prefetch':
-                return data.count > 0 ? `${data.count} files found` : 'Nothing to clean';
-            case 'windows-update': {
-                const s = fmtBytes(data.bytes);
-                if (s) return `${s} found`;
-                return data.count > 0 ? `${data.count} files found` : 'Nothing to clean';
-            }
-            default: return 'Unknown';
-        }
-    }
-
-    function hasFindings(type, data) {
-        if (!data) return false;
-        switch (type) {
-            case 'temp':           return data.count > 0 || data.bytes > 0;
-            case 'dns':            return data.entries > 0;
-            case 'recycle':        return data.count > 0 || data.bytes > 0;
-            case 'prefetch':       return data.count > 0;
-            case 'windows-update': return data.count > 0 || data.bytes > 0;
-            default: return false;
-        }
-    }
-
-    function addLogRow(msg, state = 'idle', timeStr = null) {
-        const body = document.querySelector('#page-cleanup .cu-log-body');
-        if (!body) return;
-        const row = document.createElement('div');
-        row.className = 'cu-log-row';
-        const dot = document.createElement('span');
-        dot.className = `cu-log-dot cu-dot-${state}`;
-        const msgEl = document.createElement('span');
-        msgEl.className = 'cu-log-msg';
-        msgEl.textContent = msg;
-        const timeEl = document.createElement('span');
-        timeEl.className = 'cu-log-time';
-        timeEl.textContent = timeStr || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        row.append(dot, msgEl, timeEl);
-        body.prepend(row);
-        // Keep at most 8 rows
-        while (body.children.length > 8) body.removeChild(body.lastChild);
-    }
-
-    function setCardStatus(card, label, state = 'ready') {
-        const statusEl = card.querySelector('.cu-card-status');
-        if (statusEl) {
-            statusEl.textContent = label;
-            statusEl.dataset.state = state;
-        }
-    }
-
-    // ── Scan ─────────────────────────────────────────────────────
-    const scanBtn = document.getElementById('cu-scan-btn');
-    let scanResults = null;
-
-    if (scanBtn) {
-        scanBtn.addEventListener('click', async () => {
-            if (scanBtn.disabled) return;
-            scanBtn.disabled = true;
-            const labelEl = scanBtn.querySelector('.cu-scan-btn-label');
-            if (labelEl) labelEl.textContent = 'Scanning…';
-            scanBtn.classList.add('cu-scan-btn--running');
-
-            setPipelineStep('scan');
-
-            // Reset card statuses
-            document.querySelectorAll('#page-cleanup .cleanup-card').forEach(c => {
-                setCardStatus(c, 'Scanning…', 'scanning');
-                const btn = c.querySelector('.cleanup-btn');
-                if (btn) btn.disabled = true;
-            });
-
-            try {
-                scanResults = await window.electronAPI.scanCleanup();
-                setPipelineStep('review');
-                addLogRow('Scan completed — review results below', 'success');
-
-                document.querySelectorAll('#page-cleanup .cleanup-card').forEach(card => {
-                    const type = card.dataset.cleanup;
-                    const data = scanResults?.[type] ?? null;
-                    const label = scanLabel(type, data);
-                    const found = hasFindings(type, data);
-                    setCardStatus(card, label, found ? 'found' : 'clean');
-                    const btn = card.querySelector('.cleanup-btn');
-                    if (btn) btn.disabled = !found;
-                    addLogRow(`${card.querySelector('.cu-card-title')?.textContent || type} · ${label}`, found ? 'found' : 'clean');
-                });
-            } catch (err) {
-                setPipelineStep(null);
-                addLogRow('Scan failed — check permissions', 'error');
-                document.querySelectorAll('#page-cleanup .cleanup-card').forEach(c => {
-                    setCardStatus(c, 'Scan failed', 'error');
-                    const btn = c.querySelector('.cleanup-btn');
-                    if (btn) btn.disabled = false;
-                });
-            } finally {
-                scanBtn.disabled = false;
-                scanBtn.classList.remove('cu-scan-btn--running');
-                if (labelEl) labelEl.textContent = 'Scan System';
-            }
-        });
-    }
-
-    // ── Clean buttons ────────────────────────────────────────────
-    document.querySelectorAll('#page-cleanup .cleanup-card').forEach(card => {
-        const cleanupType = card.dataset.cleanup;
-        const cleanBtn = card.querySelector('.cleanup-btn');
-        if (!cleanBtn) return;
-
-        cleanBtn.addEventListener('click', async () => {
-            if (cleanBtn.disabled) return;
-            cleanBtn.disabled = true;
-            cleanBtn.textContent = 'Cleaning…';
-            setPipelineStep('clean');
-
-            const title = card.querySelector('.cu-card-title')?.textContent || cleanupType;
-            addLogRow(`${title} · Cleaning…`, 'idle');
-
-            try {
-                const result = await window.electronAPI.runCleanup(cleanupType);
-
-                if (result.success) {
-                    setCardStatus(card, 'Cleaned', 'clean');
-                    addLogRow(`${title} · Cleaned successfully`, 'success');
-                    showNotification('success', 'Cleanup Complete', result.message);
-                    setPipelineStep('verify');
-
-                    // Re-scan this category to verify
-                    try {
-                        const fresh = await window.electronAPI.scanCleanup();
-                        const data = fresh?.[cleanupType] ?? null;
-                        const label = scanLabel(cleanupType, data);
-                        const found = hasFindings(cleanupType, data);
-                        setCardStatus(card, found ? label : 'Verified clean', found ? 'found' : 'clean');
-                        addLogRow(`${title} · Verify: ${found ? label : 'clean'}`, found ? 'found' : 'success');
-                        scanResults = fresh;
-                    } catch {}
-                } else {
-                    setCardStatus(card, 'Failed', 'error');
-                    addLogRow(`${title} · Cleanup failed`, 'error');
-                    showNotification('error', 'Cleanup Failed', result.message);
-                    cleanBtn.disabled = false;
-                    setPipelineStep('review');
-                }
-            } catch (error) {
-                setCardStatus(card, 'Error', 'error');
-                addLogRow(`${title} · Error: ${error.message}`, 'error');
-                showNotification('error', 'Error', error.message);
-                cleanBtn.disabled = false;
-                setPipelineStep('review');
-            } finally {
-                cleanBtn.textContent = 'Clean';
-            }
-        });
+function showDashboardMetricsUnavailable(message = 'Windows metrics unavailable') {
+    ['cpu-usage', 'gpu-usage', 'memory-usage', 'overview-health'].forEach((id) => {
+        const value = document.getElementById(id);
+        if (value) value.textContent = '--';
+    });
+    ['cpu-bar', 'gpu-bar', 'memory-bar', 'overview-health-bar'].forEach((id) => {
+        const bar = document.getElementById(id);
+        if (bar) bar.style.width = '0%';
+    });
+    ['free-cpu-model', 'free-gpu-model', 'free-ram-info', 'home-overview-meta'].forEach((id) => {
+        const meta = document.getElementById(id);
+        if (meta) meta.textContent = message;
+    });
+    document.querySelectorAll('.home-metric-head i').forEach((indicator) => {
+        indicator.textContent = 'UNAVAILABLE';
+        indicator.classList.add('is-unavailable');
     });
 }
 
 async function loadSystemInfo() {
     try {
         const info = await window.electronAPI.getSystemInfo();
+
+        dashboardMetricsSupported = String(info.os?.platform || '').toLowerCase() === 'win32';
+        if (!dashboardMetricsSupported) showDashboardMetricsUnavailable();
 
         document.getElementById('sys-cpu').textContent = info.cpu.model;
         document.getElementById('sys-cores').textContent = `${info.cpu.cores} Cores @ ${info.cpu.speed} MHz`;
@@ -3529,6 +2863,7 @@ async function loadSystemInfo() {
             setText('gpu-model', 'GPU');
             setText('free-gpu-model', 'GPU');
         }
+        if (!dashboardMetricsSupported) showDashboardMetricsUnavailable();
     } catch (error) {
         console.error('Failed to load system info:', error);
     }
@@ -3542,6 +2877,10 @@ function startLiveMonitoring() {
 async function updateLiveStats() {
     try {
         const stats = await window.electronAPI.getLiveStats();
+        if (dashboardMetricsSupported === false) {
+            showDashboardMetricsUnavailable();
+            return;
+        }
 
         // Helper to update bar with color
         const updateBar = (id, usage) => {
@@ -3550,9 +2889,10 @@ async function updateLiveStats() {
             if (element) element.textContent = `${usage}%`;
             if (bar) {
                 bar.style.width = `${usage}%`;
-                bar.style.backgroundColor = getColorForValue(usage);
-                // Add a subtle glow matching the color
-                bar.style.boxShadow = `0 0 10px ${getColorForValue(usage)}`;
+                if (!bar.closest('.home-meter')) {
+                    bar.style.backgroundColor = getColorForValue(usage);
+                    bar.style.boxShadow = `0 0 10px ${getColorForValue(usage)}`;
+                }
             }
         };
 
@@ -4885,6 +4225,8 @@ function updateTempChart() {
 }
 
 function pollDashboardValues() {
+    if (dashboardMetricsSupported === false) return;
+
     const cpuUsageText = document.getElementById('cpu-usage')?.textContent || '0';
     const gpuUsageText = document.getElementById('gpu-usage')?.textContent || '0';
     const ramUsageText = document.getElementById('memory-usage')?.textContent || '0';
@@ -4977,6 +4319,8 @@ function pollDashboardValues() {
         const avgActivity = histories.activity.reduce((a, b) => a + b, 0) / histories.activity.length;
         const health = Math.max(60, Math.round(100 - avgActivity * 0.4));
         healthEl.textContent = `${health}/100`;
+        const healthBar = document.getElementById('overview-health-bar');
+        if (healthBar) healthBar.style.width = `${health}%`;
     }
 
     updateTrendLines();
@@ -5006,7 +4350,7 @@ function initializeFreeHomeTweaks() {
 
         card.classList.remove('is-running', 'is-success', 'is-failed');
         if (state) card.classList.add(`is-${state}`);
-        if (resultEl) resultEl.textContent = message || 'Ready';
+        if (resultEl) resultEl.textContent = message || '';
         if (button) {
             button.disabled = state === 'running';
             if (buttonLabel) buttonLabel.textContent = state === 'running' ? 'Running' : 'Run';
@@ -5129,59 +4473,6 @@ function initializeFreeHomeTweaks() {
 function initializeDashboardExtras() {
     initializeFreeHomeTweaks();
 
-    // Temp toggle CPU / GPU
-    const toggle = document.getElementById('temp-toggle');
-    if (toggle) {
-        toggle.querySelectorAll('button').forEach(btn => {
-            btn.addEventListener('click', () => {
-                toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                activeTempSeries = btn.dataset.temp;
-                updateTempChart();
-            });
-        });
-    }
-
-    function wireActionButton(btn, applyingLabel, appliedLabel, doneTitle, doneMsg) {
-        if (!btn) return;
-        let busy = false;
-        btn.addEventListener('click', () => {
-            if (busy) return;
-            busy = true;
-            const original = btn.innerHTML;
-            const svg = btn.querySelector('svg');
-            btn.innerHTML = '';
-            if (svg) btn.appendChild(svg);
-            const span = document.createElement('span');
-            span.textContent = applyingLabel;
-            btn.appendChild(span);
-            btn.style.opacity = '0.8';
-
-            setTimeout(() => {
-                btn.innerHTML = '';
-                if (svg) btn.appendChild(svg);
-                const done = document.createElement('span');
-                done.textContent = appliedLabel;
-                btn.appendChild(done);
-                btn.style.opacity = '1';
-                showNotification('success', doneTitle, doneMsg);
-            }, 10000);
-
-            setTimeout(() => {
-                btn.innerHTML = original;
-                btn.style.opacity = '';
-                busy = false;
-            }, 14000);
-        });
-    }
-
-    wireActionButton(
-        document.getElementById('apply-all-btn'),
-        'Applying…', 'Applied',
-        'All tweaks applied',
-        'Every recommended tweak across categories has been applied successfully.'
-    );
-
     const PREMIUM_URL = 'https://xtweaks.shop/';
     const openPremiumLink = () => {
         try { window.electronAPI.openExternal(PREMIUM_URL); }
@@ -5189,12 +4480,8 @@ function initializeDashboardExtras() {
     };
 
     document.getElementById('upgrade-premium-btn')?.addEventListener('click', openPremiumLink);
-
-    document.querySelectorAll('[data-premium-grid-card]').forEach((card) => {
-        card.addEventListener('click', (event) => {
-            if (event.target.closest('button, a, input, label')) return;
-            openPremiumLink();
-        });
+    document.querySelectorAll('[data-free-action="premium"]').forEach((button) => {
+        button.addEventListener('click', openPremiumLink);
     });
 
     const navigateToPage = (pageName) => {
@@ -5206,74 +4493,33 @@ function initializeDashboardExtras() {
         return false;
     };
 
-    const freeActionMessages = {
-        details: ['System Summary', 'Detailed system view is coming soon.'],
-        scan: ['Performance Scan', 'Fake scan complete: no issues found.']
-    };
-    document.querySelectorAll('[data-free-action]').forEach((button) => {
+    document.querySelectorAll('[data-home-page]').forEach((button) => {
         button.addEventListener('click', () => {
-            if (button.dataset.freeAction === 'premium') { openPremiumLink(); return; }
-            if (button.dataset.freeAction === 'apply-all-tweaks' || button.dataset.freeAction === 'details') return;
-            if (['cleanup', 'startup', 'restore'].includes(button.dataset.freeAction)) {
-                const didNavigate = navigateToPage(button.dataset.freeAction);
-                if (!didNavigate) {
-                    showNotification('info', 'XTweaks Free', 'That page is not available right now.', {
-                        key: `free-action-missing-${button.dataset.freeAction}`,
-                        duration: 3200
-                    });
-                }
-                return;
-            }
-            const [title, message] = freeActionMessages[button.dataset.freeAction] || ['XTweaks Free', 'This action is coming soon.'];
-            showNotification('info', title, message, {
-                key: `free-action-${button.dataset.freeAction || 'unknown'}`,
-                duration: 3400
-            });
+            navigateToPage(button.dataset.homePage);
         });
     });
 
-    document.querySelectorAll('.xt-free-toggle').forEach((toggle) => {
-        toggle.addEventListener('click', () => {
-            toggle.classList.toggle('is-on');
-            showNotification('info', 'Startup Toggle', 'Preview only: startup settings were not changed.', {
-                key: 'free-toggle-toast',
-                duration: 2600
+    let activeHomeFilter = 'all';
+    const applyHomeFilter = () => {
+        const query = document.getElementById('global-search')?.value.trim().toLowerCase() || '';
+        document.querySelectorAll('[data-home-tool]').forEach((card) => {
+            const matchesCategory = activeHomeFilter === 'all' || card.dataset.homeCategory === activeHomeFilter;
+            const matchesSearch = !query || card.dataset.homeTool.includes(query);
+            card.hidden = !(matchesCategory && matchesSearch);
+        });
+    };
+
+    document.querySelectorAll('[data-home-filter]').forEach((button) => {
+        button.addEventListener('click', () => {
+            activeHomeFilter = button.dataset.homeFilter;
+            document.querySelectorAll('[data-home-filter]').forEach((item) => {
+                item.classList.toggle('is-active', item === button);
             });
+            applyHomeFilter();
         });
     });
+    document.getElementById('global-search')?.addEventListener('input', applyHomeFilter);
 
-    // Mirror uptime onto hero
-    setInterval(() => {
-        const u = document.getElementById('sys-uptime')?.textContent;
-        const heroU = document.getElementById('hero-uptime');
-        if (heroU && u && u !== '-') heroU.textContent = u;
-    }, 1000);
-
-    // Discord links inside dashboard
-    document.querySelectorAll('a[data-social="discord"]').forEach(a => {
-        a.addEventListener('click', (e) => {
-            e.preventDefault();
-            const url = a.getAttribute('href');
-            try { window.electronAPI.openExternal(url); }
-            catch { window.open(url, '_blank'); }
-        });
-    });
-
-    // Global search — filter across toggle/tweak/cleanup cards by title text
-    // Network cards (data-net-cat) are excluded here; applyNetworkFilter() handles them
-    const search = document.getElementById('global-search');
-    if (search) {
-        search.addEventListener('input', (e) => {
-            const q = e.target.value.trim().toLowerCase();
-            const cards = document.querySelectorAll('.toggle-card:not([data-net-cat]), .tweak-card, .cleanup-card, .slider-card');
-            cards.forEach(card => {
-                const text = card.textContent.toLowerCase();
-                card.style.display = !q || text.includes(q) ? '' : 'none';
-            });
-        });
-    }
-
-    // Poll DOM-driven values at the same cadence as live monitoring
     setInterval(pollDashboardValues, 250);
 }
 
@@ -13572,284 +12818,57 @@ function scheduleAboutCardsOnEntry(options = {}) {
     }));
 }
 
-// ── Cleanup: card reveal motion ──────────────────────────────────────────────
-const CLEANUP_ENTRY_MOTION = {
-    duration: 820,
-    stagger: 90,
-    slideY: 18,
-    blur: 7,
-    opacity: 0,
-    scale: 0.985,
-    easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
-};
-let cleanupPageEnterMotionLastRun = 0;
-
-function getCleanupEntryItems() {
-    const page = document.getElementById('page-cleanup');
-    if (!page) return [];
-    // New xt-* structure: only target cards, NOT the hero panel
-    if (page.querySelector('.xt-cleanup-hero')) {
-        return Array.from(page.querySelectorAll('.xt-cleanup-card-shell')).filter(el => {
-            const r = el.getBoundingClientRect();
-            return r.width >= 8 && r.height >= 8;
-        });
-    }
-    // Fallback: legacy cu-* static structure — cards only, no hero/pipeline/log
-    const items = [];
-    page.querySelectorAll('.cu-group-safe .cleanup-card').forEach(el => items.push(el));
-    page.querySelectorAll('.cu-group-cache .cleanup-card').forEach(el => items.push(el));
-    return items;
-}
-
-function animateCleanupCardsOnEntry() {
-    const page = document.getElementById('page-cleanup');
-    if (!page?.classList.contains('active')) return;
-
-    const m = CLEANUP_ENTRY_MOTION;
-    const items = getCleanupEntryItems();
-
-    items.forEach(item => {
-        if (item._cleanupAnim) { try { item._cleanupAnim.cancel(); } catch (_) {} item._cleanupAnim = null; }
-        item.style.removeProperty('opacity');
-        item.style.removeProperty('transform');
-        item.style.removeProperty('filter');
-        item.style.removeProperty('pointer-events');
-    });
-    if (items[0]) items[0].offsetHeight;
-
-    items.forEach((item, index) => {
-        const delay = index * m.stagger;
-        item.style.pointerEvents = 'none';
-        const anim = item.animate([
-            { opacity: m.opacity, transform: `translateY(${m.slideY}px) scale(${m.scale})`, filter: `blur(${m.blur}px)` },
-            { opacity: 1,         transform: 'translateY(0) scale(1)',                        filter: 'blur(0px)' }
-        ], { duration: m.duration, delay, easing: m.easing, fill: 'both' });
-        item._cleanupAnim = anim;
-        anim.onfinish = () => {
-            item.style.removeProperty('pointer-events');
-            item.style.removeProperty('opacity');
-            item.style.removeProperty('transform');
-            item.style.removeProperty('filter');
-            if (item._cleanupAnim === anim) item._cleanupAnim = null;
-        };
-        setTimeout(() => item.style.removeProperty('pointer-events'), delay + m.duration + 60);
-    });
-}
-
-function scheduleCleanupCardsOnEntry(options = {}) {
-    const now = Date.now();
-    if (options.source === 'page-enter' && now - cleanupPageEnterMotionLastRun < 900) return;
-    if (options.source === 'page-enter') cleanupPageEnterMotionLastRun = now;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        animateCleanupCardsOnEntry();
-    }));
-}
-
-// ── Settings: card reveal motion (iOS Control Center — slides DOWN from above) ──
-const SETTINGS_ENTRY_MOTION = {
+// ── Utility pages: staggered card reveal on page entry ─────────────────────
+const PAGE_ENTRY_MOTION = {
     duration: 820,
     stagger: 75,
+    maxStaggered: 10,
     slideY: 18,
     blur: 7,
-    opacity: 0,
     scale: 0.985,
     easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
 };
-let settingsPageEnterMotionLastRun = 0;
-
-function getSettingsEntryItems() {
-    const page = document.getElementById('page-settings');
-    if (!page) return [];
-    // Collect visible card elements in DOM order — header/search/reset excluded.
-    const items = [];
-    const expCard = page.querySelector('.settings-experience-card');
-    if (expCard) items.push(expCard);
-    page.querySelectorAll('.settings-control-card').forEach(el => items.push(el));
-    const studioCard = page.querySelector('.settings-studio-card');
-    if (studioCard) items.push(studioCard);
-    const hubCard = page.querySelector('.settings-hub-card');
-    if (hubCard) items.push(hubCard);
-    return items.filter(el => {
-        const r = el.getBoundingClientRect();
-        return r.width >= 8 && r.height >= 8;
-    });
-}
-
-function animateSettingsCardsOnEntry() {
-    const page = document.getElementById('page-settings');
-    if (!page?.classList.contains('active')) return;
-
-    const m = SETTINGS_ENTRY_MOTION;
-    const items = getSettingsEntryItems();
-
-    items.forEach(item => {
-        if (item._settingsAnim) { try { item._settingsAnim.cancel(); } catch (_) {} item._settingsAnim = null; }
-        item.style.removeProperty('opacity');
-        item.style.removeProperty('transform');
-        item.style.removeProperty('filter');
-        item.style.removeProperty('pointer-events');
-    });
-    if (items[0]) items[0].offsetHeight;
-
-    items.forEach((item, index) => {
-        const delay = index * m.stagger;
-        item.style.pointerEvents = 'none';
-        const anim = item.animate([
-            { opacity: m.opacity, transform: `translateY(${m.slideY}px) scale(${m.scale})`, filter: `blur(${m.blur}px)` },
-            { opacity: 1,         transform: 'translateY(0) scale(1)',                       filter: 'blur(0px)' }
-        ], { duration: m.duration, delay, easing: m.easing, fill: 'both' });
-        item._settingsAnim = anim;
-        anim.onfinish = () => {
-            item.style.removeProperty('pointer-events');
-            item.style.removeProperty('opacity');
-            item.style.removeProperty('transform');
-            item.style.removeProperty('filter');
-            if (item._settingsAnim === anim) item._settingsAnim = null;
-        };
-        setTimeout(() => item.style.removeProperty('pointer-events'), delay + m.duration + 60);
-    });
-}
-
-function scheduleSettingsCardsOnEntry(options = {}) {
-    const now = Date.now();
-    if (options.source === 'page-enter' && now - settingsPageEnterMotionLastRun < 900) return;
-    if (options.source === 'page-enter') settingsPageEnterMotionLastRun = now;
-    requestAnimationFrame(() => requestAnimationFrame(() => animateSettingsCardsOnEntry()));
-}
-
-// ── Startup: card reveal motion (mirrors Cleanup entrance exactly) ────────────
-const STARTUP_ENTRY_MOTION = {
-    duration: 820,
-    stagger: 75,
-    slideY: 18,
-    blur: 7,
-    opacity: 0,
-    scale: 0.985,
-    easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+const PAGE_ENTRY_TARGETS = {
+    cleanup: '.xt-page-header, .xt-toolbar, .cleanup-tool, .xt-page-aside > *',
+    startup: '.xt-page-header, .startup-panel, .startup-row, .xt-page-aside > *',
+    restore: '.xt-page-header, .xt-panel, .xt-page-aside > *',
+    settings: '.xt-page-header, .xt-panel, .xt-page-aside > *'
 };
-let startupPageEnterMotionLastRun = 0;
+const pageEntryLastRun = new Map();
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 let startupAutoScanDone = false;
 let cleanupAutoScanDone = false;
 
-function getStartupEntryCards() {
-    const page = document.getElementById('page-startup');
-    if (!page) return [];
-    // Hero intentionally excluded — only app cards animate.
-    // Size filter deferred to animation loop to avoid false-zero rects at display:none→block transition.
-    return Array.from(page.querySelectorAll('.xt-startup-card'));
-}
+function animatePageEntry(pageName, selector = PAGE_ENTRY_TARGETS[pageName]) {
+    const page = document.getElementById(`page-${pageName}`);
+    if (!page?.classList.contains('active') || prefersReducedMotion.matches) return;
 
-function animateStartupCardsOnEntry() {
-    const page = document.getElementById('page-startup');
-    if (!page?.classList.contains('active')) return;
+    const m = PAGE_ENTRY_MOTION;
+    const items = Array.from(page.querySelectorAll(selector));
+    items.forEach(item => item._entryAnim?.cancel());
 
-    const m = STARTUP_ENTRY_MOTION;
-    const items = getStartupEntryCards();
-
-    items.forEach(item => {
-        if (item._startupAnim) { try { item._startupAnim.cancel(); } catch (_) {} item._startupAnim = null; }
-        item.style.removeProperty('opacity');
-        item.style.removeProperty('transform');
-        item.style.removeProperty('filter');
-        item.style.removeProperty('pointer-events');
-    });
-    if (items[0]) items[0].offsetHeight;
-
-    let animIndex = 0;
+    let index = 0;
     items.forEach((item) => {
-        const r = item.getBoundingClientRect();
-        if (r.width < 8 && r.height < 8) return;
-        const delay = animIndex * m.stagger;
-        animIndex++;
-        item.style.pointerEvents = 'none';
-        const anim = item.animate([
-            { opacity: m.opacity, transform: `translateY(${m.slideY}px) scale(${m.scale})`, filter: `blur(${m.blur}px)` },
-            { opacity: 1,         transform: 'translateY(0) scale(1)',                       filter: 'blur(0px)' }
-        ], { duration: m.duration, delay, easing: m.easing, fill: 'both' });
-        item._startupAnim = anim;
-        anim.onfinish = () => {
-            item.style.removeProperty('pointer-events');
-            item.style.removeProperty('opacity');
-            item.style.removeProperty('transform');
-            item.style.removeProperty('filter');
-            if (item._startupAnim === anim) item._startupAnim = null;
-        };
-        setTimeout(() => item.style.removeProperty('pointer-events'), delay + m.duration + 60);
+        const rect = item.getBoundingClientRect();
+        if (rect.width < 8 || rect.height < 8) return;
+        const delay = Math.min(index++, m.maxStaggered) * m.stagger;
+        item._entryAnim = item.animate([
+            { opacity: 0, transform: `translateY(${m.slideY}px) scale(${m.scale})`, filter: `blur(${m.blur}px)` },
+            { opacity: 1, transform: 'translateY(0) scale(1)', filter: 'blur(0px)' }
+        ], { duration: m.duration, delay, easing: m.easing, fill: 'backwards' });
     });
 }
 
-function scheduleStartupCardsOnEntry(options = {}) {
+function schedulePageEntry(pageName, options = {}) {
     const now = Date.now();
-    if (options.source === 'page-enter' && now - startupPageEnterMotionLastRun < 900) return;
-    if (options.source === 'page-enter') startupPageEnterMotionLastRun = now;
-    setTimeout(() => {
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-            animateStartupCardsOnEntry();
-        }));
-    }, 0);
+    if (options.source === 'page-enter') {
+        if (now - (pageEntryLastRun.get(pageName) || 0) < 900) return;
+        pageEntryLastRun.set(pageName, now);
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => animatePageEntry(pageName, options.selector)));
 }
 
-// ── Restore Point: card reveal motion ────────────────────────────────────────
-const RESTORE_ENTRY_MOTION = {
-    duration: 820,
-    stagger: 100,
-    slideY: 18,
-    blur: 7,
-    opacity: 0,
-    scale: 0.985,
-    easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
-};
-let restorePageEnterMotionLastRun = 0;
-
-function getRestoreEntryCards() {
-    const page = document.getElementById('page-restore');
-    if (!page) return [];
-    return Array.from(page.querySelectorAll('.xt-restore-status-card, .xt-restore-action-card')).filter(el => {
-        const r = el.getBoundingClientRect();
-        return r.width >= 8 && r.height >= 8;
-    });
-}
-
-function animateRestoreCardsOnEntry() {
-    const page = document.getElementById('page-restore');
-    if (!page?.classList.contains('active')) return;
-
-    const m = RESTORE_ENTRY_MOTION;
-    const items = getRestoreEntryCards();
-
-    items.forEach(item => {
-        if (item._restoreAnim) { try { item._restoreAnim.cancel(); } catch (_) {} item._restoreAnim = null; }
-        item.style.removeProperty('opacity');
-        item.style.removeProperty('transform');
-        item.style.removeProperty('filter');
-        item.style.removeProperty('pointer-events');
-    });
-    if (items[0]) items[0].offsetHeight;
-
-    items.forEach((item, index) => {
-        const delay = index * m.stagger;
-        item.style.pointerEvents = 'none';
-        const anim = item.animate([
-            { opacity: m.opacity, transform: `translateY(${m.slideY}px) scale(${m.scale})`, filter: `blur(${m.blur}px)` },
-            { opacity: 1,         transform: 'translateY(0) scale(1)',                       filter: 'blur(0px)' }
-        ], { duration: m.duration, delay, easing: m.easing, fill: 'both' });
-        item._restoreAnim = anim;
-        anim.onfinish = () => {
-            item.style.removeProperty('pointer-events');
-            item.style.removeProperty('opacity');
-            item.style.removeProperty('transform');
-            item.style.removeProperty('filter');
-            if (item._restoreAnim === anim) item._restoreAnim = null;
-        };
-        setTimeout(() => item.style.removeProperty('pointer-events'), delay + m.duration + 60);
-    });
-}
-
-function scheduleRestoreCardsOnEntry(options = {}) {
-    const now = Date.now();
-    if (options.source === 'page-enter' && now - restorePageEnterMotionLastRun < 900) return;
-    if (options.source === 'page-enter') restorePageEnterMotionLastRun = now;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-        animateRestoreCardsOnEntry();
-    }));
-}
+const scheduleCleanupCardsOnEntry = (options) => schedulePageEntry('cleanup', options);
+const scheduleStartupCardsOnEntry = (options) => schedulePageEntry('startup', options);
+const scheduleRestoreCardsOnEntry = (options) => schedulePageEntry('restore', options);
+const scheduleSettingsCardsOnEntry = (options) => schedulePageEntry('settings', options);
