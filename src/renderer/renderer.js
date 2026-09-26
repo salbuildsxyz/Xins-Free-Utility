@@ -197,39 +197,22 @@ function formatBytesCompact(bytes) {
 
 function getHomeTweakMarkup(card, compact = false) {
     const category = card.requiresAdmin ? 'admin' : 'safe';
-    const statusClass = card.requiresAdmin ? 'requires-admin' : 'is-ready';
-    const status = `
-        <span class="xt-tweak-status-pill ${statusClass}" data-home-tweak-status="${card.id}">
-            <span></span>${card.status}
-        </span>`;
-    const include = `
-        <label class="xt-tweak-include" title="Include ${card.title} in selected cleanup">
-            <input type="checkbox" data-home-tweak-include="${card.id}" checked>
-            <span aria-hidden="true"></span>
-        </label>`;
-    const runButton = `
-        <button class="xt-tweak-run-btn" type="button" data-home-tweak-run="${card.id}">
-            <span class="xt-run-btn-label" data-home-tweak-run-label="${card.id}">Run</span>
-        </button>`;
-
-    if (compact) {
-        return `
-            <article class="home-tool-row xt-tweak-launch-card" data-home-tweak-card="${card.id}" data-home-category="${category}" data-home-tool="${card.title.toLowerCase()}">
-                <span class="home-icon">${getFreeHomeTweakIcon(card.icon)}</span>
-                <div class="home-tool-copy"><h3>${card.title}</h3><p>${card.description}</p></div>
-                <div class="home-row-actions">
-                    ${include}
-                    <div>${status}${runButton}</div>
-                </div>
-                <p class="xt-tweak-result" data-home-tweak-result="${card.id}"></p>
-            </article>`;
-    }
-
     return `
-        <article class="home-tool-card xt-tweak-launch-card" data-home-tweak-card="${card.id}" data-home-category="${category}" data-home-tool="${card.title.toLowerCase()}">
-            <div class="home-tool-card-top"><span class="home-icon">${getFreeHomeTweakIcon(card.icon)}</span>${include}</div>
+        <article class="home-tool-card${compact ? ' home-tool-card--compact' : ''}" data-home-tweak-card="${card.id}" data-home-category="${category}" data-home-tool="${card.title.toLowerCase()}">
+            <div class="home-tool-card-top">
+                <span class="home-icon">${getFreeHomeTweakIcon(card.icon)}</span>
+                <label class="xt-tweak-include" title="Include ${card.title} in selected cleanup">
+                    <input type="checkbox" data-home-tweak-include="${card.id}" aria-label="Include ${card.title}" checked>
+                    <span aria-hidden="true"></span>
+                </label>
+            </div>
             <div class="home-tool-copy"><h3>${card.title}</h3><p>${card.description}</p></div>
-            <div class="home-tool-card-footer">${status}${runButton}</div>
+            <div class="home-tool-card-footer">
+                <span class="xt-tweak-status-pill ${card.requiresAdmin ? 'requires-admin' : 'is-ready'}" data-home-tweak-status="${card.id}"><span></span>${card.status}</span>
+                <button class="xt-tweak-run-btn" type="button" data-home-tweak-run="${card.id}">
+                    <span class="xt-run-btn-label" data-home-tweak-run-label="${card.id}">Run</span>
+                </button>
+            </div>
             <p class="xt-tweak-result" data-home-tweak-result="${card.id}"></p>
         </article>`;
 }
@@ -951,7 +934,7 @@ function initializeNavigation() {
                 _restoreNetTopBar();
                 updateTopBarHeightVar();
                 if (targetPage === 'dashboard') {
-                    playHomeEntryAnimation({ force: true });
+                    playHomeEntryAnimation();
                 }
                 if (targetPage === 'about') {
                     scheduleAboutCardsOnEntry({ source: 'page-enter' });
@@ -4427,9 +4410,10 @@ function initializeFreeHomeTweaks() {
         FREE_HOME_TWEAK_CARDS.forEach(card => {
             const pill = document.querySelector(`[data-home-tweak-status="${card.id}"]`);
             if (!pill) return;
-            const label = card.requiresAdmin && !isAdmin ? 'Requires Admin' : card.status;
-            pill.classList.toggle('requires-admin', card.requiresAdmin && !isAdmin);
-            pill.classList.toggle('is-ready', !(card.requiresAdmin && !isAdmin));
+            const needsAdmin = card.requiresAdmin === true && !isAdmin;
+            const label = needsAdmin ? 'Requires Admin' : card.status;
+            pill.classList.toggle('requires-admin', needsAdmin);
+            pill.classList.toggle('is-ready', !needsAdmin);
             pill.innerHTML = `<span></span>${label}`;
         });
     }).catch(() => {});
@@ -7953,7 +7937,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // is removed before we measure card rects and start the WAAPI sequence.
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                playHomeEntryAnimation({ force: true });
+                playHomeEntryAnimation();
             });
         });
     }
@@ -11274,158 +11258,9 @@ function scheduleNetworkCardsOnEntry(options = {}) {
 }
 
 // ── Dashboard: card reveal motion (mirrors Network/Gaming entrance) ──────────
-const DASHBOARD_ENTRY_MOTION = {
-    duration: 820,
-    stagger: 100,
-    slideX: 0,
-    slideY: 20,
-    blur: 8,
-    opacity: 0,
-    scale: 0.98,
-    easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
-};
-
-let dashboardPageEnterMotionLastRun = 0;
-let dashboardTabMotionLastRun = 0;
-let dashboardTabMotionRequest = 0;
-
-function getDashboardEntryCards(page) {
-    const items = [];
-    // #hero-card intentionally excluded — only sub-cards animate
-    page.querySelectorAll('.assets-grid > .asset-card').forEach(c => items.push(c));
-    const discord = page.querySelector('#discord-card');
-    if (discord) items.push(discord);
-    const active = page.querySelector('.active-card.glass');
-    if (active) items.push(active);
-    return items.filter(item => {
-        const rect = item.getBoundingClientRect();
-        return rect.width >= 8 && rect.height >= 8;
-    });
-}
-
-function clearDashboardEntryCardAnimations(items = []) {
-    items.forEach(item => {
-        if (item._dashboardEntryAnimation) {
-            item._dashboardEntryAnimation.cancel();
-            item._dashboardEntryAnimation = null;
-        }
-        item.style.removeProperty('will-change');
-        item.style.removeProperty('pointer-events');
-        item.style.removeProperty('opacity');
-        item.style.removeProperty('transform');
-        item.style.removeProperty('filter');
-        clearEntryCardShine(item);
-    });
-}
-
-function animateDashboardCardsOnEntry() {
-    const page = document.getElementById('page-dashboard');
-    if (!page?.classList.contains('active')) return 0;
-
-    const motion = DASHBOARD_ENTRY_MOTION;
-    const targetItems = getDashboardEntryCards(page);
-    clearDashboardEntryCardAnimations(targetItems);
-    if (targetItems[0]) targetItems[0].offsetHeight;
-
-    let started = 0;
-    targetItems.forEach((item, index) => {
-        const rect = item.getBoundingClientRect();
-        if (rect.width < 8 || rect.height < 8) return;
-        applyEntryCardShine(item, index, motion.stagger);
-        item.style.pointerEvents = 'none';
-
-        const animation = item.animate([
-            {
-                opacity: motion.opacity,
-                transform: `translate3d(${motion.slideX}px, ${motion.slideY}px, 0) scale(${motion.scale})`,
-                filter: `blur(${motion.blur}px)`
-            },
-            {
-                opacity: 1,
-                transform: 'translate3d(0, 0, 0) scale(1)',
-                filter: 'blur(0px)'
-            }
-        ], {
-            duration: motion.duration,
-            delay: index * motion.stagger,
-            easing: motion.easing,
-            fill: 'both'
-        });
-
-        item.style.willChange = 'transform, opacity, filter';
-        item._dashboardEntryAnimation = animation;
-        setTimeout(() => {
-            if (item._dashboardEntryAnimation === animation) item.style.removeProperty('pointer-events');
-        }, index * motion.stagger);
-        animation.finished
-            .catch(() => {})
-            .finally(() => {
-                if (item._dashboardEntryAnimation === animation) {
-                    animation.cancel();
-                    item._dashboardEntryAnimation = null;
-                    item.style.removeProperty('will-change');
-                    item.style.removeProperty('pointer-events');
-                    item.style.removeProperty('opacity');
-                    item.style.removeProperty('transform');
-                    item.style.removeProperty('filter');
-                }
-            });
-        started++;
-    });
-
-    return started;
-}
-
-// Single authoritative entry-point for playing the Home dashboard entrance.
-// Always call with force:true so it clears any in-progress WAAPI animations
-// (via clearDashboardEntryCardAnimations inside animateDashboardCardsOnEntry),
-// re-triggers the CSS header animation, and starts the WAAPI card stagger —
-// without touching the scheduleDashboardCardsOnEntry throttle timestamps, so
-// subsequent nav clicks are never silently swallowed.
-function playHomeEntryAnimation({ force = false } = {}) {
-    const dashPage = document.getElementById('page-dashboard');
-    if (!dashPage) return;
-    if (!force && !dashPage.classList.contains('active')) return;
-
-    // Re-trigger the CSS cineRise header animation.
-    dashPage.classList.remove('dash-entered');
-    void dashPage.offsetWidth;
-    dashPage.classList.add('dash-entered');
-
-    // Two rAFs so the browser paints the visible state of the page before
-    // card rects are measured and the WAAPI stagger sequence starts.
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            animateDashboardCardsOnEntry();
-        });
-    });
-}
-
-function scheduleDashboardCardsOnEntry(options = {}) {
-    const page = document.getElementById('page-dashboard');
-    if (!page) return;
-    const requestId = ++dashboardTabMotionRequest;
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            if (!page.classList.contains('active')) return;
-            const now = performance.now();
-            if (options.source === 'page-enter' && now - dashboardPageEnterMotionLastRun < 900) return;
-            if (options.source === 'page-enter') dashboardPageEnterMotionLastRun = now;
-            if (options.source === 'tab-click') {
-                if (requestId !== dashboardTabMotionRequest) return;
-                if (now - dashboardTabMotionLastRun < 450) {
-                    setTimeout(() => {
-                        if (requestId !== dashboardTabMotionRequest || !page.classList.contains('active')) return;
-                        dashboardTabMotionLastRun = performance.now();
-                        animateDashboardCardsOnEntry();
-                    }, 450 - (now - dashboardTabMotionLastRun));
-                    return;
-                }
-                dashboardTabMotionLastRun = now;
-            }
-            animateDashboardCardsOnEntry();
-        });
-    });
+// Home replays the same staggered reveal as the utility pages on every visit.
+function playHomeEntryAnimation() {
+    schedulePageEntry('dashboard');
 }
 
 // ── AI Process Reducer: card reveal motion ────────────────────────────────────
@@ -12829,6 +12664,7 @@ const PAGE_ENTRY_MOTION = {
     easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
 };
 const PAGE_ENTRY_TARGETS = {
+    dashboard: '.home-hero, .home-tool-card, .home-side-panel, .home-metric-card, .home-premium-strip',
     cleanup: '.xt-page-header, .xt-toolbar, .cleanup-tool, .xt-page-aside > *',
     startup: '.xt-page-header, .startup-panel, .startup-row, .xt-page-aside > *',
     restore: '.xt-page-header, .xt-panel, .xt-page-aside > *',

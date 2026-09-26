@@ -668,7 +668,7 @@ body::after {
     color-mix(in srgb, var(--accent-primary) 18%, #d7dbe0) 100%);
   color: #101010;
   border: 1px solid color-mix(in srgb, var(--accent-border) 55%, rgba(255,255,255,0.85));
-  border-radius: 999px;
+  border-radius: 10px;
   font-family: inherit;
   font-size: 13px;
   font-weight: 800;
@@ -3451,43 +3451,7 @@ body::after {
 #page-dashboard .assets-block {
     min-width: 0;
 }
-#page-dashboard .xt-tweak-launch-card {
-    min-height: 232px;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-    padding: 16px;
-    background:
-        radial-gradient(88% 78% at 10% 2%, rgba(255,255,255,0.13), transparent 43%),
-        radial-gradient(70% 48% at 100% 0%, rgba(255,255,255,0.06), transparent 52%),
-        linear-gradient(165deg, #151517 0%, #0d0d0f 54%, #080809 100%);
-    border: 1px solid rgba(248,249,251,0.12);
-    box-shadow:
-        0 18px 42px rgba(0,0,0,0.52),
-        inset 0 1px 0 rgba(255,255,255,0.08),
-        inset 0 -18px 30px rgba(0,0,0,0.18);
-    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-}
-#page-dashboard .xt-tweak-launch-card:hover {
-    transform: translateY(-3px);
-    border-color: rgba(245,247,250,0.22);
-    box-shadow:
-        0 24px 48px rgba(0,0,0,0.56),
-        0 0 22px rgba(255,255,255,0.07),
-        inset 0 1px 0 rgba(255,255,255,0.10),
-        inset 0 -18px 30px rgba(0,0,0,0.18);
-}
-#page-dashboard .xt-tweak-launch-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background:
-        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 24%),
-        linear-gradient(135deg, rgba(255,255,255,0.04), transparent 28%);
-    pointer-events: none;
-}
+
 .xt-tweak-card-top,
 .xt-tweak-card-footer {
     display: flex;
@@ -3611,15 +3575,7 @@ body::after {
     font-size: 10.5px;
     line-height: 1.35;
 }
-.xt-tweak-launch-card.is-running .xt-tweak-result {
-    color: rgba(255,255,255,0.78);
-}
-.xt-tweak-launch-card.is-success .xt-tweak-result {
-    color: rgba(180,255,215,0.80);
-}
-.xt-tweak-launch-card.is-failed .xt-tweak-result {
-    color: rgba(255,205,205,0.82);
-}
+
 #page-dashboard .xt-premium-grid-card {
     cursor: pointer;
 }
@@ -13736,16 +13692,6 @@ ol.ai-msg-list li {
   100% { transform: translateX(260%) skewX(-20deg); opacity: 0; }
 }
 
-/* -- Dashboard staggered entrance ---------------------------------
-   Hero, stat cards, Discord panel, and temp monitor are animated
-   by the WAAPI system in renderer.js (scheduleDashboardCardsOnEntry),
-   matching the Network/Gaming entrance pattern exactly.
-   Only the section header uses a CSS animation here.              */
-#page-dashboard.dash-entered .assets-header {
-  animation: cineRise 680ms var(--ease-cine) backwards;
-  animation-delay: 200ms;
-}
-
 /* -- Hero ambient glass light sweep -------------------------------
    Periodic soft glint across the hero. Theme-safe white gradient,
    low opacity, sits above background art but below interactive
@@ -13815,7 +13761,6 @@ ol.ai-msg-list li {
    Elements settle instantly at their natural resting state.
    ============================================================= */
 @media (prefers-reduced-motion: reduce) {
-  #page-dashboard.dash-entered .assets-header,
   .sidebar .nav-branding,
   .sidebar .nav-category,
   .sidebar .nav-item,
@@ -16338,7 +16283,6 @@ ol.ai-msg-list li {
 }
 
 .home-tool-card,
-.home-tool-row,
 .home-side-panel,
 .home-metric-card {
   border: 1px solid var(--home-border);
@@ -16354,8 +16298,7 @@ ol.ai-msg-list li {
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
 }
 
-.home-tool-card:hover,
-.home-tool-row:hover {
+.home-tool-card:hover {
   transform: translateY(-2px);
   border-color: color-mix(in oklch, var(--home-text) 20%, var(--home-border));
   background: color-mix(in oklch, var(--home-surface) 80%, white 6%);
@@ -16395,6 +16338,31 @@ ol.ai-msg-list li {
   margin-top: auto;
   padding-top: 14px;
 }
+
+/* Cleanup & Maintenance: same card anatomy as Recommended, tighter rhythm. */
+.home-tool-card--compact {
+  min-height: 0;
+  padding: 14px 15px;
+}
+
+.home-tool-card--compact .home-tool-copy {
+  margin-top: 12px;
+}
+
+.home-tool-card--compact .home-tool-copy p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.home-tool-card--compact .home-tool-card-footer {
+  padding-top: 12px;
+}
+
+.home-tool-card.is-running .xt-tweak-result { color: var(--home-text); }
+.home-tool-card.is-success .xt-tweak-result { color: var(--state-safe); }
+.home-tool-card.is-failed .xt-tweak-result { color: #f0907f; }
 
 #page-dashboard .xt-tweak-status-pill {
   min-height: auto;
@@ -16452,55 +16420,13 @@ ol.ai-msg-list li {
 .home-tool-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.home-tool-row {
-  min-height: 72px;
-  display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  border-radius: 11px;
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
-}
-
-.home-tool-row .home-icon {
-  width: 38px;
-  height: 38px;
-}
-
-.home-row-actions {
-  min-width: 132px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 4px;
-}
-
-.home-row-actions > label {
-  grid-column: 2;
-  justify-self: end;
-}
-
-.home-row-actions > div {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 9px;
-}
-
-.home-tool-row > .xt-tweak-result {
-  grid-column: 2 / -1;
-  margin: 0;
+  gap: 12px;
 }
 
 .home-side-stack {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 12px;
 }
 
 .home-side-panel {
@@ -16753,8 +16679,7 @@ ol.ai-msg-list li {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
-  .home-tool-card:hover,
-  .home-tool-row:hover {
+  .home-tool-card:hover {
     transform: none;
   }
 }
@@ -16895,13 +16820,15 @@ body.settings-nav-compact .sidebar [data-tooltip]:focus-visible::after {
   height: var(--topbar-control-h);
 }
 
-/* ── Shared toggle (checkbox .xt-tweak-include + button .settings-toggle) ── */
+/* ── Shared toggle (checkbox .xt-tweak-include + button .settings-toggle) ──
+   Structured desktop switch: squared track, crisp square-ish thumb, gold
+   tint when on rather than a solid glowing pill. */
 .xt-tweak-include {
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
-  width: 42px;
-  height: 24px;
+  width: 40px;
+  height: 22px;
   cursor: pointer;
 }
 
@@ -16926,16 +16853,16 @@ body.settings-nav-compact .sidebar [data-tooltip]:focus-visible::after {
   position: relative;
   display: block;
   flex: 0 0 auto;
-  width: 42px;
-  height: 24px;
+  width: 40px;
+  height: 22px;
   box-sizing: border-box;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  background: #1c1b17;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 7px;
+  background: #151411;
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
   cursor: inherit;
-  transition: background-color 220ms var(--ease-ui), border-color 220ms var(--ease-ui), box-shadow 220ms var(--ease-ui);
+  transition: background-color 200ms var(--ease-ui), border-color 200ms var(--ease-ui);
 }
 
 .settings-toggle {
@@ -16948,54 +16875,62 @@ body.settings-nav-compact .sidebar [data-tooltip]:focus-visible::after {
   position: absolute;
   top: 3px;
   left: 3px;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  background: #8f8b81;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: #6f6b62;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 1px 2px rgba(0, 0, 0, 0.5);
   transform: translateX(var(--switch-x));
-  transition: transform 220ms var(--ease-ui), width 160ms var(--ease-ui), background-color 220ms var(--ease-ui);
+  transition: transform 200ms var(--ease-ui), width 140ms var(--ease-ui), background-color 200ms var(--ease-ui);
 }
 
 .xt-tweak-include:hover > span,
 .settings-toggle:hover {
   border-color: rgba(255, 255, 255, 0.24);
-  background-color: #24221d;
+}
+
+.xt-tweak-include:hover > span::after,
+.settings-toggle:hover > span {
+  background-color: #8a867c;
 }
 
 .xt-tweak-include input:checked + span,
 .settings-toggle.is-on {
   --switch-x: 18px;
-  border-color: color-mix(in oklch, var(--home-gold, #ffd633) 80%, white);
-  background-color: var(--home-gold, #ffd633);
-  box-shadow: 0 0 0 3px rgba(255, 214, 51, 0.07), 0 0 14px rgba(255, 214, 51, 0.2);
-}
-
-.xt-tweak-include:hover input:checked + span,
-.settings-toggle.is-on:hover {
-  background-color: color-mix(in oklch, var(--home-gold, #ffd633) 90%, white);
+  border-color: rgba(255, 214, 51, 0.55);
+  background-color: rgba(255, 214, 51, 0.14);
 }
 
 .xt-tweak-include input:checked + span::after,
 .settings-toggle.is-on > span {
-  background: #17130a;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background-color: #f2c94c;
+  box-shadow: inset 0 1px 0 rgba(255, 244, 196, 0.6), 0 0 8px rgba(255, 214, 51, 0.18);
+}
+
+.xt-tweak-include:hover input:checked + span,
+.settings-toggle.is-on:hover {
+  border-color: rgba(255, 214, 51, 0.75);
+}
+
+.xt-tweak-include:hover input:checked + span::after,
+.settings-toggle.is-on:hover > span {
+  background-color: #ffd84d;
 }
 
 .xt-tweak-include:active > span::after,
 .settings-toggle:active > span {
-  width: 20px;
+  width: 17px;
 }
 
 .xt-tweak-include:active input:checked + span,
 .settings-toggle.is-on:active {
-  --switch-x: 14px;
+  --switch-x: 15px;
 }
 
 .xt-tweak-include input:focus-visible + span,
 .settings-toggle:focus-visible {
   outline: 2px solid var(--home-gold, #ffd633);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 .xt-tweak-include input:disabled + span {
@@ -18330,6 +18265,22 @@ html[data-theme="xins-premium"] .discord-join-btn:active {
   transform: scale(0.97) !important;
 }
 
+/* Premium CTA: flat gold, squared to match the utility controls. */
+html[data-theme="xins-premium"] #upgrade-premium-btn.top-bar-cta {
+  color: #15110a;
+  background: #f5c93a;
+  border: 1px solid #ffdc5c;
+  box-shadow: inset 0 1px 0 rgba(255, 244, 196, 0.55);
+}
+
+html[data-theme="xins-premium"] #upgrade-premium-btn.top-bar-cta:hover {
+  color: #15110a;
+  background: #ffd84d;
+  border-color: #ffe57f;
+  box-shadow: inset 0 1px 0 rgba(255, 244, 196, 0.65), 0 4px 14px rgba(255, 214, 51, 0.14);
+  filter: none;
+}
+
 html[data-theme="xins-premium"] .page-body {
   padding: 24px 28px 40px;
 }
@@ -18584,27 +18535,6 @@ html[data-theme="xins-premium"] .xt-tweak-confirm-actions .xt-tweak-modal-btn:no
   transform: scale(0.97) !important;
 }
 
-html[data-theme="xins-premium"] #page-dashboard .xt-tweak-launch-card {
-  padding: 18px;
-  background:
-    radial-gradient(90% 74% at 10% 0%, rgba(255, 214, 51, 0.075), transparent 46%),
-    linear-gradient(160deg, rgba(19, 17, 10, 0.92), rgba(8, 7, 4, 0.92));
-  border-color: rgba(255, 214, 51, 0.13);
-  border-radius: 18px;
-  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.76), inset 0 1px 0 rgba(255, 240, 163, 0.075), inset 0 -1px 0 rgba(0, 0, 0, 0.52);
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms ease, box-shadow 240ms ease;
-}
-
-html[data-theme="xins-premium"] #page-dashboard .xt-tweak-launch-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(255, 214, 51, 0.30);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.84), 0 0 28px rgba(255, 214, 51, 0.075), inset 0 1px 0 rgba(255, 240, 163, 0.11), inset 0 -1px 0 rgba(0, 0, 0, 0.52);
-}
-
-html[data-theme="xins-premium"] #page-dashboard .xt-tweak-launch-card::after {
-  background: linear-gradient(145deg, rgba(255, 240, 163, 0.035), transparent 32%);
-}
-
 html[data-theme="xins-premium"] #page-dashboard .xt-tweak-card-body h3,
 html[data-theme="xins-premium"] #page-dashboard .xt-free-section-header h2 {
   color: #f7f5ef;
@@ -18667,36 +18597,4 @@ html[data-theme="xins-premium"] .slider-card,
 html[data-theme="xins-premium"] .tweak-card {
     transition: none;
   }
-}
-
-/* Keep homepage tools on restrained graphite surfaces in the Gold theme. */
-html[data-theme="xins-premium"] #page-dashboard .home-tool-card {
-  min-height: 198px;
-  padding: 17px;
-  border: 1px solid var(--home-border);
-  border-radius: 13px;
-  background: var(--home-surface-raised);
-  box-shadow: none;
-}
-
-html[data-theme="xins-premium"] #page-dashboard .home-tool-row {
-  min-height: 72px;
-  padding: 10px;
-  border: 1px solid var(--home-border);
-  border-radius: 11px;
-  background: var(--home-surface-raised);
-  box-shadow: none;
-}
-
-html[data-theme="xins-premium"] #page-dashboard .home-tool-card::after,
-html[data-theme="xins-premium"] #page-dashboard .home-tool-row::after {
-  content: none;
-}
-
-html[data-theme="xins-premium"] #page-dashboard .home-tool-card:hover,
-html[data-theme="xins-premium"] #page-dashboard .home-tool-row:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in oklch, var(--home-text) 20%, var(--home-border));
-  background: color-mix(in oklch, var(--home-surface) 80%, white 6%);
-  box-shadow: none;
 }
